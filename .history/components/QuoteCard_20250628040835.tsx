@@ -1,0 +1,144 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Trash2, Quote as QuoteIcon } from 'lucide-react-native';
+import { Quote } from '@/types';
+import { theme, commonStyles } from '@/constants/theme';
+
+interface QuoteCardProps {
+  quote: Quote;
+  onDelete?: () => void;
+  showDeleteButton?: boolean;
+  style?: ViewStyle;
+}
+
+export function QuoteCard({ quote, onDelete, showDeleteButton = false, style }: QuoteCardProps) {
+  const isFullScreen = style && 'width' in style && style.width === '100%';
+  
+  const gradientColors = quote.gradientColors || theme.colors.gradient.primary;
+  
+  return (
+    <View style={[styles.container, style]}>
+      <View style={[styles.card, commonStyles.glassCard, isFullScreen && styles.fullScreenCard]}>
+        {/* Gradient overlay for visual appeal */}
+        <LinearGradient
+          colors={gradientColors as any}
+          style={styles.gradientOverlay}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+        
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <QuoteIcon 
+              size={isFullScreen ? 40 : 28} 
+              color={isFullScreen ? theme.colors.text.primary : theme.colors.text.accent} 
+            />
+            {showDeleteButton && onDelete && (
+              <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
+                <Trash2 
+                  size={20} 
+                  color={isFullScreen ? theme.colors.text.primary : theme.colors.error} 
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <Text style={[
+            styles.quoteText, 
+            isFullScreen && styles.fullScreenQuoteText
+          ]}>
+            &ldquo;{quote.text}&rdquo;
+          </Text>
+          
+          {quote.author && (
+            <Text style={[
+              styles.author, 
+              isFullScreen && styles.fullScreenAuthor
+            ]}>
+              — {quote.author}
+            </Text>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: theme.spacing.md,
+  },
+  card: {
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xl,
+    position: 'relative',
+    overflow: 'hidden',
+    minHeight: 200,
+    justifyContent: 'center',
+    ...theme.shadows.lg,
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.1,
+  },
+  content: {
+    zIndex: 1,
+  },
+  fullScreenCard: {
+    borderRadius: 0,
+    padding: 40,
+    minHeight: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  deleteButton: {
+    padding: theme.spacing.xs,
+  },
+  quoteText: {
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.primary,
+    lineHeight: 34,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
+  },
+  fullScreenQuoteText: {
+    fontSize: theme.typography.fontSize['4xl'],
+    fontFamily: theme.typography.fontFamily.medium,
+    color: theme.colors.text.primary,
+    lineHeight: 44,
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  author: {
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: theme.colors.text.secondary,
+    textAlign: 'right',
+  },
+  fullScreenAuthor: {
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    opacity: 0.9,
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+});
