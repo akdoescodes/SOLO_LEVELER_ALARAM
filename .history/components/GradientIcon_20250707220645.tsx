@@ -1,0 +1,40 @@
+import React from 'react';
+import { View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { theme } from '@/constants/theme';
+import { LucideIcon } from 'lucide-react-native';
+
+interface GradientIconProps {
+  icon: LucideIcon;
+  size?: number;
+  colors?: readonly string[];
+}
+
+export function GradientIcon({ 
+  icon: Icon, 
+  size = 20, 
+  colors = theme.colors.gradient.primary 
+}: GradientIconProps) {
+  return (
+    <MaskedView
+      style={{ width: size, height: size }}
+      maskElement={
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Icon size={size} color="white" />
+        </View>
+      }
+    >
+      <LinearGradient
+        colors={colors as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        <View style={{ opacity: 0 }}>
+          <Icon size={size} color="transparent" />
+        </View>
+      </LinearGradient>
+    </MaskedView>
+  );
+}

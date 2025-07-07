@@ -7,6 +7,7 @@ import { theme, commonStyles } from '@/constants/theme';
 import { ContextMenu } from './ContextMenu';
 import { GradientText } from './GradientText';
 import { GradientIcon } from './GradientIcon';
+import { IconWithLabel } from './IconWithLabel';
 
 interface AlarmCardProps {
   alarm: Alarm;

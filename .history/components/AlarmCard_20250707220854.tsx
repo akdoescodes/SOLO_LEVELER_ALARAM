@@ -45,7 +45,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
     
     return (
       <View style={styles.daysContainer}>
-        <GradientIcon icon={Calendar} size={14} />
+        <Calendar size={14} color={theme.colors.text.secondary} />
         <View style={styles.daySquaresContainer}>
           {dayAbbreviations.map((dayAbbr, index) => {
             const dayName = dayNames[index];
@@ -109,7 +109,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                 {renderDayIndicators()}
                 {alarm.soundName && (
                   <View style={styles.soundContainer}>
-                    <GradientIcon icon={Music} size={14} />
+                    <Music size={14} color={theme.colors.text.secondary} />
                     <Text style={styles.soundText}>{alarm.soundName}</Text>
                   </View>
                 )}
@@ -133,7 +133,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                   style={styles.menuButton} 
                   onPress={handleMenuPress}
                 >
-                  <GradientIcon icon={MoreVertical} size={20} />
+                  <MoreVertical size={20} color={theme.colors.text.secondary} />
                 </TouchableOpacity>
               </View>
             </View>

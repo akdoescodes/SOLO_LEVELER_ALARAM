@@ -6,7 +6,6 @@ import { useStorage } from '@/hooks/useStorage';
 import { Volume2, Vibrate, Clock, Plus, Minus } from 'lucide-react-native';
 import { theme, commonStyles } from '@/constants/theme';
 import { GradientIcon } from '@/components/GradientIcon';
-import { IconWithLabel } from '@/components/IconWithLabel';
 
 export default function SettingsScreen() {
   const { settings, saveSettings, loaded } = useStorage();
@@ -43,12 +42,15 @@ export default function SettingsScreen() {
             <View style={[styles.settingCard, commonStyles.glassCard]}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
-                  <IconWithLabel icon={Volume2} size={20}>
+                  <View style={styles.iconContainer}>
+                    <GradientIcon icon={Volume2} size={24} />
+                  </View>
+                  <View style={styles.settingText}>
                     <Text style={styles.settingLabel}>Sound</Text>
                     <Text style={styles.settingDescription}>
                       Play sound when alarm rings
                     </Text>
-                  </IconWithLabel>
+                  </View>
                 </View>
                 <Switch
                   value={settings.soundEnabled}
@@ -65,12 +67,20 @@ export default function SettingsScreen() {
             <View style={[styles.settingCard, commonStyles.glassCard]}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
-                  <IconWithLabel icon={Vibrate} size={20}>
+                  <View style={styles.iconContainer}>
+                    <LinearGradient
+                      colors={theme.colors.gradient.primary}
+                      style={styles.iconGradient}
+                    >
+                      <Vibrate size={20} color={theme.colors.text.primary} />
+                    </LinearGradient>
+                  </View>
+                  <View style={styles.settingText}>
                     <Text style={styles.settingLabel}>Vibration</Text>
                     <Text style={styles.settingDescription}>
                       Vibrate when alarm rings
                     </Text>
-                  </IconWithLabel>
+                  </View>
                 </View>
                 <Switch
                   value={settings.vibrationEnabled}
@@ -91,26 +101,34 @@ export default function SettingsScreen() {
             <View style={[styles.settingCard, commonStyles.glassCard]}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
-                  <IconWithLabel icon={Clock} size={20}>
+                  <View style={styles.iconContainer}>
+                    <LinearGradient
+                      colors={theme.colors.gradient.primary}
+                      style={styles.iconGradient}
+                    >
+                      <Clock size={20} color={theme.colors.text.primary} />
+                    </LinearGradient>
+                  </View>
+                  <View style={styles.settingText}>
                     <Text style={styles.settingLabel}>Quotes Required</Text>
                     <Text style={styles.settingDescription}>
                       Number of quotes to swipe through
                     </Text>
-                  </IconWithLabel>
+                  </View>
                 </View>
                 <View style={styles.counterContainer}>
                   <TouchableOpacity
-                    style={styles.counterButton}
+                    style={[styles.counterButton, commonStyles.filterButtonInactive]}
                     onPress={() => updateSetting('quotesRequired', Math.max(1, settings.quotesRequired - 1))}
                   >
-                    <GradientIcon icon={Minus} size={18} />
+                    <Minus size={16} color={theme.colors.text.secondary} />
                   </TouchableOpacity>
                   <Text style={styles.counterValue}>{settings.quotesRequired}</Text>
                   <TouchableOpacity
-                    style={styles.counterButton}
+                    style={[styles.counterButton, commonStyles.filterButtonInactive]}
                     onPress={() => updateSetting('quotesRequired', Math.min(10, settings.quotesRequired + 1))}
                   >
-                    <GradientIcon icon={Plus} size={18} />
+                    <Plus size={16} color={theme.colors.text.secondary} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -178,8 +196,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md, // Reduced from lg to md
   },
   iconContainer: {
-    width: 24,
-    height: 24,
+    width: 40,
+    height: 40,
+    borderRadius: theme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  iconGradient: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -188,6 +214,10 @@ const styles = StyleSheet.create({
   },
   settingInfo: {
     flex: 1,
+  },
+  settingText: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
   },
   settingTitle: {
     fontSize: theme.typography.fontSize.lg,
@@ -204,7 +234,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
-    marginTop: 2, // Add a small margin to separate from the label
   },
   counterContainer: {
     flexDirection: 'row',
@@ -212,8 +241,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   counterButton: {
-    width: 28, // Slightly smaller
-    height: 28, // Slightly smaller
+    width: 32,
+    height: 32,
     borderRadius: theme.borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',

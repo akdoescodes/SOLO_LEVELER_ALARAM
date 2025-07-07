@@ -7,6 +7,7 @@ import { theme, commonStyles } from '@/constants/theme';
 import { ContextMenu } from './ContextMenu';
 import { GradientText } from './GradientText';
 import { GradientIcon } from './GradientIcon';
+import { IconWithLabel } from './IconWithLabel';
 
 interface AlarmCardProps {
   alarm: Alarm;
@@ -108,10 +109,9 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
               <View style={styles.infoRow}>
                 {renderDayIndicators()}
                 {alarm.soundName && (
-                  <View style={styles.soundContainer}>
-                    <GradientIcon icon={Music} size={14} />
+                  <IconWithLabel icon={Music} size={14}>
                     <Text style={styles.soundText}>{alarm.soundName}</Text>
-                  </View>
+                  </IconWithLabel>
                 )}
               </View>
             </View>

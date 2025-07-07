@@ -7,6 +7,7 @@ import { theme, commonStyles } from '@/constants/theme';
 import { ContextMenu } from './ContextMenu';
 import { GradientText } from './GradientText';
 import { GradientIcon } from './GradientIcon';
+import { IconWithLabel } from './IconWithLabel';
 
 interface AlarmCardProps {
   alarm: Alarm;
@@ -44,8 +45,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
     return (
-      <View style={styles.daysContainer}>
-        <GradientIcon icon={Calendar} size={14} />
+      <IconWithLabel icon={Calendar} size={14}>
         <View style={styles.daySquaresContainer}>
           {dayAbbreviations.map((dayAbbr, index) => {
             const dayName = dayNames[index];
@@ -69,7 +69,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
             );
           })}
         </View>
-      </View>
+      </IconWithLabel>
     );
   };
 
@@ -108,10 +108,9 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
               <View style={styles.infoRow}>
                 {renderDayIndicators()}
                 {alarm.soundName && (
-                  <View style={styles.soundContainer}>
-                    <GradientIcon icon={Music} size={14} />
+                  <IconWithLabel icon={Music} size={14}>
                     <Text style={styles.soundText}>{alarm.soundName}</Text>
-                  </View>
+                  </IconWithLabel>
                 )}
               </View>
             </View>

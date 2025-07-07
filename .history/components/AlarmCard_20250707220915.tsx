@@ -133,7 +133,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                   style={styles.menuButton} 
                   onPress={handleMenuPress}
                 >
-                  <GradientIcon icon={MoreVertical} size={20} />
+                  <MoreVertical size={20} color={theme.colors.text.secondary} />
                 </TouchableOpacity>
               </View>
             </View>

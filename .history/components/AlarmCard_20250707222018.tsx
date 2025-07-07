@@ -19,7 +19,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
 
   const getDaysText = () => {
-    if (alarm.days.length === 0) return 'One time';
+    if (alarm.days.length === 0) return 'One timeeeeeeee';
     if (alarm.days.length === 7) return 'Every day';
     return alarm.days.join(', ');
   };

@@ -188,6 +188,12 @@ const styles = StyleSheet.create({
   },
   settingInfo: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingText: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
   },
   settingTitle: {
     fontSize: theme.typography.fontSize.lg,
@@ -204,7 +210,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
-    marginTop: 2, // Add a small margin to separate from the label
   },
   counterContainer: {
     flexDirection: 'row',
@@ -212,8 +217,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   counterButton: {
-    width: 28, // Slightly smaller
-    height: 28, // Slightly smaller
+    width: 32,
+    height: 32,
     borderRadius: theme.borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',

@@ -212,8 +212,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   counterButton: {
-    width: 28, // Slightly smaller
-    height: 28, // Slightly smaller
+    width: 32,
+    height: 32,
     borderRadius: theme.borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
