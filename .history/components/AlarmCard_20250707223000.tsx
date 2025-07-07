@@ -76,7 +76,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                       {dayAbbr}
                     </GradientText>
                   ) : (
-                    <Text style={[styles.dayText, { color: theme.colors.text.primary }]}>
+                    <Text style={styles.dayText}>
                       {dayAbbr}
                     </Text>
                   )
