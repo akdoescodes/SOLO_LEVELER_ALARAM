@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: theme.spacing.md, // Reduced from lg to md
+    paddingHorizontal: theme.spacing.lg,
   },
   scrollViewContent: {
     paddingBottom: 100, // Account for tab bar height + extra spacing

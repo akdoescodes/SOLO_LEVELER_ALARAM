@@ -158,8 +158,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.md, // Reduced from lg to md
-    paddingVertical: theme.spacing.sm, // Even less vertical padding
+    padding: theme.spacing.lg,
     position: 'relative',
     // Remove overflow: 'hidden' to allow dropdown to extend outside
     ...theme.shadows.md,

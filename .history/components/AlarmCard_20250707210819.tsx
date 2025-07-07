@@ -28,46 +28,34 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
       return (
         <View style={styles.daysContainer}>
           <Calendar size={14} color={theme.colors.text.secondary} />
-          <GradientText
-            style={styles.days}
-            colors={theme.colors.gradient.primary}
-          >
-            {getDaysText()}
-          </GradientText>
+          <Text style={styles.days}>{getDaysText()}</Text>
         </View>
       );
     }
 
     // Show individual day squares for specific days
     const dayAbbreviations = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     
     return (
-      <View style={styles.daysContainer}>
-        <Calendar size={14} color={theme.colors.text.secondary} />
-        <View style={styles.daySquaresContainer}>
-          {dayAbbreviations.map((dayAbbr, index) => {
-            const dayName = dayNames[index];
-            const isSelected = alarm.days.includes(dayName);
-            
-            return (
-              <View key={index} style={styles.daySquare}>
-                {isSelected ? (
-                  <GradientText
-                    style={styles.dayText}
-                    colors={theme.colors.gradient.primary}
-                  >
-                    {dayAbbr}
-                  </GradientText>
-                ) : (
-                  <Text style={[styles.dayText, styles.dayTextInactive]}>
-                    {dayAbbr}
-                  </Text>
-                )}
-              </View>
-            );
-          })}
-        </View>
+      <View style={styles.daySquaresContainer}>
+        {dayAbbreviations.map((dayAbbr, index) => {
+          const dayName = dayNames[index];
+          const isSelected = alarm.days.includes(dayName);
+          
+          return (
+            <View key={index} style={styles.daySquare}>
+              <Text 
+                style={[
+                  styles.dayText, 
+                  isSelected ? styles.dayTextSelected : styles.dayTextInactive
+                ]}
+              >
+                {dayAbbr}
+              </Text>
+            </View>
+          );
+        })}
       </View>
     );
   };
@@ -158,8 +146,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.md, // Reduced from lg to md
-    paddingVertical: theme.spacing.sm, // Even less vertical padding
+    padding: theme.spacing.lg,
     position: 'relative',
     // Remove overflow: 'hidden' to allow dropdown to extend outside
     ...theme.shadows.md,
@@ -232,26 +219,31 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
-    // Removed background for cleaner look
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   daySquaresContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: theme.spacing.xs, // Same margin as between calendar icon and text
-    gap: theme.spacing.xs / 2, // Reduced gap between day letters
-    flexWrap: 'wrap',
+    marginBottom: theme.spacing.xs,
+    gap: theme.spacing.xs,
   },
   daySquare: {
-    width: 16, // Smaller width
-    height: 20,
+    width: 22,
+    height: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    // Clean look with no background or border
+    borderRadius: 11, // Fully rounded
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   dayText: {
-    fontSize: theme.typography.fontSize.xs, // 12px based on theme
-    fontFamily: theme.typography.fontFamily.regular, // Match the "One time" text style
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.medium,
     textAlign: 'center',
+  },
+  dayTextSelected: {
+    color: theme.colors.gradient.primary[0], // Use the first gradient color
+    fontFamily: theme.typography.fontFamily.bold, // Make it bolder
   },
   dayTextInactive: {
     color: 'rgba(255, 255, 255, 0.3)', // More subtle for unselected days

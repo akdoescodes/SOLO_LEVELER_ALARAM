@@ -28,46 +28,37 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
       return (
         <View style={styles.daysContainer}>
           <Calendar size={14} color={theme.colors.text.secondary} />
-          <GradientText
-            style={styles.days}
-            colors={theme.colors.gradient.primary}
-          >
-            {getDaysText()}
-          </GradientText>
+          <Text style={styles.days}>{getDaysText()}</Text>
         </View>
       );
     }
 
     // Show individual day squares for specific days
     const dayAbbreviations = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     
     return (
-      <View style={styles.daysContainer}>
-        <Calendar size={14} color={theme.colors.text.secondary} />
-        <View style={styles.daySquaresContainer}>
-          {dayAbbreviations.map((dayAbbr, index) => {
-            const dayName = dayNames[index];
-            const isSelected = alarm.days.includes(dayName);
-            
-            return (
-              <View key={index} style={styles.daySquare}>
-                {isSelected ? (
-                  <GradientText
-                    style={styles.dayText}
-                    colors={theme.colors.gradient.primary}
-                  >
-                    {dayAbbr}
-                  </GradientText>
-                ) : (
-                  <Text style={[styles.dayText, styles.dayTextInactive]}>
+      <View style={styles.daySquaresContainer}>
+        {dayAbbreviations.map((dayAbbr, index) => {
+          const dayName = dayNames[index];
+          const isSelected = alarm.days.includes(dayName);
+          
+          return (
+            <View key={index} style={styles.daySquare}>
+              {isSelected ? (
+                <View style={styles.daySquareSelected}>
+                  <Text style={styles.dayText}>
                     {dayAbbr}
                   </Text>
-                )}
-              </View>
-            );
-          })}
-        </View>
+                </View>
+              ) : (
+                <Text style={[styles.dayText, styles.dayTextInactive]}>
+                  {dayAbbr}
+                </Text>
+              )}
+            </View>
+          );
+        })}
       </View>
     );
   };
@@ -158,8 +149,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.md, // Reduced from lg to md
-    paddingVertical: theme.spacing.sm, // Even less vertical padding
+    padding: theme.spacing.lg,
     position: 'relative',
     // Remove overflow: 'hidden' to allow dropdown to extend outside
     ...theme.shadows.md,
@@ -232,25 +222,34 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
-    // Removed background for cleaner look
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   daySquaresContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: theme.spacing.xs, // Same margin as between calendar icon and text
-    gap: theme.spacing.xs / 2, // Reduced gap between day letters
-    flexWrap: 'wrap',
+    marginBottom: theme.spacing.xs,
+    gap: theme.spacing.xs,
   },
   daySquare: {
-    width: 16, // Smaller width
+    width: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    // Clean look with no background or border
+    // No background color for clean look
+  },
+  daySquareSelected: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.gradient.primary[0],
+    backgroundColor: 'rgba(16, 185, 129, 0.1)', // Very subtle background
   },
   dayText: {
-    fontSize: theme.typography.fontSize.xs, // 12px based on theme
-    fontFamily: theme.typography.fontFamily.regular, // Match the "One time" text style
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.medium,
     textAlign: 'center',
   },
   dayTextInactive: {

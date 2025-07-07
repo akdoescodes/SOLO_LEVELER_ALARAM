@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   aboutCard: {
     marginBottom: theme.spacing.md, // Match QuoteCard spacing (16px instead of 32px)
-    padding: theme.spacing.md, // Reduced from lg to md
+    padding: theme.spacing.lg,
   },
   aboutTitle: {
     fontSize: theme.typography.fontSize.xl,

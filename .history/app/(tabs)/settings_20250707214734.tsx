@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.spacing.sm, // Reduced from md to sm
-    paddingHorizontal: theme.spacing.md, // Reduced from lg to md
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
   },
   iconContainer: {
     width: 40,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   aboutCard: {
     marginBottom: theme.spacing.md, // Match QuoteCard spacing (16px instead of 32px)
-    padding: theme.spacing.md, // Reduced from lg to md
+    padding: theme.spacing.lg,
   },
   aboutTitle: {
     fontSize: theme.typography.fontSize.xl,

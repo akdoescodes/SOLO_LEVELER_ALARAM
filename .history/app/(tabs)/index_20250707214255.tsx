@@ -2,28 +2,38 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Quote as QuoteIcon } from 'lucide-react-native';
+import { Plus, Clock } from 'lucide-react-native';
 import { useStorage } from '@/hooks/useStorage';
-import { QuoteCard } from '@/components/QuoteCard';
-import { AddQuoteModal } from '@/components/AddQuoteModal';
+import { useAlarmManager } from '@/hooks/useAlarmManager';
+import { AlarmCard } from '@/components/AlarmCard';
+import { AddAlarmModal } from '@/components/AddAlarmModal';
 import { theme, commonStyles } from '@/constants/theme';
 
-export default function QuotesScreen() {
-  const { quotes, saveQuotes, loaded } = useStorage();
+export default function AlarmsScreen() {
+  const { alarms, settings, saveAlarms, loaded } = useStorage();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { stopAlarm } = useAlarmManager(alarms, settings.soundEnabled, settings.vibrationEnabled);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const deleteQuote = (quoteId: string) => {
+  const toggleAlarm = (alarmId: string) => {
+    const updatedAlarms = alarms.map(alarm =>
+      alarm.id === alarmId ? { ...alarm, enabled: !alarm.enabled } : alarm
+    );
+    saveAlarms(updatedAlarms);
+  };
+
+  const deleteAlarm = (alarmId: string) => {
     Alert.alert(
-      'Delete Quote',
-      'Are you sure you want to delete this quote?',
+      'Delete Alarm',
+      'Are you sure you want to delete this alarm?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            const updatedQuotes = quotes.filter(quote => quote.id !== quoteId);
-            saveQuotes(updatedQuotes);
+            const updatedAlarms = alarms.filter(alarm => alarm.id !== alarmId);
+            saveAlarms(updatedAlarms);
           },
         },
       ]
@@ -32,7 +42,7 @@ export default function QuotesScreen() {
 
   if (!loaded) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <SafeAreaView style={styles.safeArea}>
           <Text style={styles.loadingText}>Loading...</Text>
         </SafeAreaView>
@@ -41,10 +51,10 @@ export default function QuotesScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Text style={styles.title}>Quotes</Text>
+          <Text style={styles.title}>Alarms</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setShowAddModal(true)}
@@ -59,35 +69,37 @@ export default function QuotesScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </View>
+
         <ScrollView 
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
         >
-          {quotes.length === 0 ? (
+          {alarms.length === 0 ? (
             <View style={styles.emptyState}>
-              <QuoteIcon size={64} color={theme.colors.text.secondary} />
-              <Text style={styles.emptyStateTitle}>No Quotes Added</Text>
+              <Clock size={64} color={theme.colors.text.secondary} />
+              <Text style={styles.emptyStateTitle}>No Alarms Set</Text>
               <Text style={styles.emptyStateText}>
-                Add your favorite quotes to see them when your alarm rings
+                Tap the + button to create your first alarm
               </Text>
             </View>
           ) : (
-            quotes.map(quote => (
-              <QuoteCard
-                key={quote.id}
-                quote={quote}
-                onDelete={() => deleteQuote(quote.id)}
-                showDeleteButton={true}
+            alarms.map(alarm => (
+              <AlarmCard
+                key={alarm.id}
+                alarm={alarm}
+                onToggle={() => toggleAlarm(alarm.id)}
+                onDelete={() => deleteAlarm(alarm.id)}
               />
             ))
           )}
         </ScrollView>
-        <AddQuoteModal
+
+        <AddAlarmModal
           visible={showAddModal}
           onClose={() => setShowAddModal(false)}
-          onSave={(newQuote) => {
-            saveQuotes([...quotes, newQuote]);
+          onSave={(newAlarm) => {
+            saveAlarms([...alarms, newAlarm]);
             setShowAddModal(false);
           }}
         />
@@ -130,7 +142,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: theme.spacing.md, // Reduced from lg to md
+    paddingHorizontal: theme.spacing.lg,
   },
   scrollViewContent: {
     paddingBottom: 100, // Account for tab bar height + extra spacing
@@ -139,7 +151,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: theme.spacing.xxl * 2, // 96px for consistency
+    paddingVertical: theme.spacing.xxl * 2, // 96px instead of 80px
   },
   emptyStateTitle: {
     fontSize: theme.typography.fontSize['2xl'],
@@ -154,7 +166,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: theme.spacing.sm,
     lineHeight: 24,
-    paddingHorizontal: 20,
   },
   loadingText: {
     fontSize: theme.typography.fontSize.lg,

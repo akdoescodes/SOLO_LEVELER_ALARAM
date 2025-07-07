@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md, // Reduced from xl to md
+    marginBottom: theme.spacing.xl,
   },
   deleteButton: {
     padding: theme.spacing.xs,

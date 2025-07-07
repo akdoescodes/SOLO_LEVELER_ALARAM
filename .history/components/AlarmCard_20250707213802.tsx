@@ -28,12 +28,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
       return (
         <View style={styles.daysContainer}>
           <Calendar size={14} color={theme.colors.text.secondary} />
-          <GradientText
-            style={styles.days}
-            colors={theme.colors.gradient.primary}
-          >
-            {getDaysText()}
-          </GradientText>
+          <Text style={styles.days}>{getDaysText()}</Text>
         </View>
       );
     }
@@ -158,8 +153,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.md, // Reduced from lg to md
-    paddingVertical: theme.spacing.sm, // Even less vertical padding
+    padding: theme.spacing.lg,
     position: 'relative',
     // Remove overflow: 'hidden' to allow dropdown to extend outside
     ...theme.shadows.md,
@@ -232,12 +226,12 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
-    // Removed background for cleaner look
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   daySquaresContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: theme.spacing.xs, // Same margin as between calendar icon and text
+    marginBottom: theme.spacing.xs,
     gap: theme.spacing.xs / 2, // Reduced gap between day letters
     flexWrap: 'wrap',
   },
@@ -250,7 +244,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: theme.typography.fontSize.xs, // 12px based on theme
-    fontFamily: theme.typography.fontFamily.regular, // Match the "One time" text style
+    fontFamily: theme.typography.fontFamily.medium,
     textAlign: 'center',
   },
   dayTextInactive: {
