@@ -86,7 +86,7 @@ export default function AlarmsScreen() {
             </View>
           ) : (
             <>
-              <AlarmInsightCard alarms={alarms} />
+              <AlarmInsightCard />
               {alarms.map(alarm => (
                 <AlarmCard
                   key={alarm.id}

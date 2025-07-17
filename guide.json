@@ -1,0 +1,152 @@
+{
+  "theme": {
+    "name": "Dark Theme Goal Tracker",
+    "primary_background": "#1a1a1a",
+    "secondary_background": "#2a2a2a",
+    "card_background": "#333333"
+  },
+  "colors": {
+    "primary_accent": "#00d4aa",
+    "secondary_accent": "#4a9eff",
+    "success_green": "#22c55e",
+    "warning_orange": "#f59e0b",
+    "error_red": "#ef4444",
+    "text_primary": "#ffffff",
+    "text_secondary": "#a1a1aa",
+    "text_muted": "#71717a"
+  },
+  "gradients": {
+    "complete_button": {
+      "from": "#00d4aa",
+      "to": "#4a9eff",
+      "direction": "left-to-right"
+    }
+  },
+  "typography": {
+    "heading_primary": {
+      "font_weight": "bold",
+      "size": "large",
+      "color": "#ffffff"
+    },
+    "body_text": {
+      "font_weight": "normal",
+      "size": "medium",
+      "color": "#a1a1aa"
+    },
+    "labels": {
+      "font_weight": "medium",
+      "size": "small",
+      "color": "#71717a"
+    }
+  },
+  "layout": {
+    "card_structure": {
+      "border_radius": "8px",
+      "padding": "20px",
+      "margin": "16px",
+      "shadow": "subtle"
+    },
+    "grid_system": {
+      "columns": 3,
+      "gap": "16px"
+    }
+  },
+  "components": {
+    "goal_card": {
+      "background": "#2a2a2a",
+      "border": "1px solid #444444",
+      "border_radius": "8px",
+      "status_indicator": {
+        "incomplete": "circle outline",
+        "complete": "filled circle"
+      }
+    },
+    "progress_bar": {
+      "background": "#444444",
+      "fill": "#00d4aa",
+      "height": "4px",
+      "border_radius": "2px"
+    },
+    "stats_grid": {
+      "priority": {
+        "value": "44.8",
+        "color": "#00d4aa"
+      },
+      "effort": {
+        "value": "1.3",
+        "color": "#00d4aa"
+      },
+      "value": {
+        "value": "268.8",
+        "color": "#00d4aa"
+      }
+    },
+    "buttons": {
+      "primary": {
+        "background": "linear-gradient(to right, #00d4aa, #4a9eff)",
+        "text_color": "#ffffff",
+        "border_radius": "6px",
+        "padding": "12px 24px"
+      },
+      "icon_buttons": {
+        "edit": "#a1a1aa",
+        "delete": "#ef4444",
+        "generate": "#00d4aa"
+      }
+    },
+    "tags": {
+      "background": "#444444",
+      "text_color": "#ffffff",
+      "border_radius": "4px",
+      "padding": "4px 8px",
+      "font_size": "small"
+    },
+    "sidebar": {
+      "background": "#1a1a1a",
+      "width": "300px",
+      "recurring_goals": {
+        "header_color": "#00d4aa",
+        "frequency_indicator": "#a1a1aa"
+      }
+    }
+  },
+  "status_indicators": {
+    "due_tomorrow": {
+      "color": "#f59e0b",
+      "icon": "clock"
+    },
+    "overdue": {
+      "color": "#ef4444",
+      "icon": "warning"
+    },
+    "daily_recurring": {
+      "color": "#a1a1aa",
+      "icon": "calendar"
+    }
+  },
+  "interaction_states": {
+    "hover": {
+      "card_background": "#3a3a3a",
+      "button_brightness": "110%"
+    },
+    "active": {
+      "accent_color": "#00d4aa",
+      "background_shift": "#444444"
+    }
+  },
+  "spacing": {
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "24px",
+    "xl": "32px"
+  },
+  "design_patterns": {
+    "card_based_layout": true,
+    "sidebar_navigation": true,
+    "metric_display_grid": true,
+    "status_color_coding": true,
+    "gradient_accent_buttons": true,
+    "dark_mode_optimized": true
+  }
+}

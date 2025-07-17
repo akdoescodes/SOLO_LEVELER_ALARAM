@@ -85,8 +85,6 @@ export default function AlarmScreen() {
     if (nextIndex >= quotesToShow.length) {
       // All quotes swiped - dismiss alarm
       await stopAlarm(id as string);
-      // Record wake-up time for statistics
-      await WakeUpStatsManager.recordWakeUp();
       router.back();
     } else {
       // Move to next quote with smooth transition

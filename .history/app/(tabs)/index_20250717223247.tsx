@@ -85,17 +85,14 @@ export default function AlarmsScreen() {
               </Text>
             </View>
           ) : (
-            <>
-              <AlarmInsightCard alarms={alarms} />
-              {alarms.map(alarm => (
-                <AlarmCard
-                  key={alarm.id}
-                  alarm={alarm}
-                  onToggle={() => toggleAlarm(alarm.id)}
-                  onDelete={() => deleteAlarm(alarm.id)}
-                />
-              ))}
-            </>
+            alarms.map(alarm => (
+              <AlarmCard
+                key={alarm.id}
+                alarm={alarm}
+                onToggle={() => toggleAlarm(alarm.id)}
+                onDelete={() => deleteAlarm(alarm.id)}
+              />
+            ))
           )}
         </ScrollView>
 
