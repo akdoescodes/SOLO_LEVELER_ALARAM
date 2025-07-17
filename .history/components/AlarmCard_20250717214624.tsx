@@ -135,11 +135,11 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                 value={alarm.enabled}
                 onValueChange={onToggle}
                 trackColor={{ 
-                  false: 'rgba(255, 255, 255, 0.2)', // More subtle when off
-                  true: `${theme.colors.gradient.primary[1]}80` // Add transparency for subtlety
+                  false: 'rgba(255, 255, 255, 0.3)', 
+                  true: theme.colors.gradient.primary[0] 
                 }}
-                thumbColor={alarm.enabled ? "white" : "rgba(255, 255, 255, 0.8)"} // Slightly transparent when off
-                ios_backgroundColor="rgba(255, 255, 255, 0.2)"
+                thumbColor="white"
+                ios_backgroundColor="rgba(255, 255, 255, 0.3)"
                 style={styles.switch}
               />
               <View style={styles.menuContainer}>
@@ -218,6 +218,16 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginLeft: theme.spacing.xs,
   },
+  soundContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  soundText: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+    marginLeft: theme.spacing.xs,
+  },
   rightContent: {
     alignItems: 'center',
   },
@@ -231,8 +241,7 @@ const styles = StyleSheet.create({
         transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
       },
       web: {
-        // Add subtle transition for web
-        transition: 'all 0.3s ease-in-out',
+        // No transform for web to keep it natural
       },
     }),
   },
