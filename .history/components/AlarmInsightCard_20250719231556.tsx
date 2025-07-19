@@ -127,7 +127,6 @@ export function AlarmInsightCard({
 const styles = StyleSheet.create({
   container: {
     marginBottom: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
   },
   mainHeading: {
     fontSize: theme.typography.fontSize.xl,

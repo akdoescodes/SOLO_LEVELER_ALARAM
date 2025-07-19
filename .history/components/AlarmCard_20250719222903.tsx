@@ -172,13 +172,13 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
     position: 'relative', // Allow absolute positioning for dropdown
   },
   card: {
     borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    padding: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
     position: 'relative',
     ...theme.shadows.md,
   },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   time: {
-    fontSize: theme.typography.fontSize['3xl'],
+    fontSize: theme.typography.fontSize['2xl'],
     fontFamily: theme.typography.fontFamily.bold,
   },
   infoRow: {
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
   },
   days: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.xs,
     fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
     marginLeft: theme.spacing.xs,
@@ -221,13 +221,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switch: {
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
     ...Platform.select({
       ios: {
-        transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
+        transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
       },
       android: {
-        transform: [{ scaleX: 1.0 }, { scaleY: 1.0 }],
+        transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
       },
       web: {
         // Add subtle transition for web
@@ -239,29 +239,30 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   menuButton: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    // Removed background for cleaner look
   },
   daySquaresContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: theme.spacing.xs,
-    gap: theme.spacing.xs / 4,
-    flexWrap: 'nowrap',
-    flex: 1,
+    marginLeft: theme.spacing.xs, // Same margin as between calendar icon and text
+    gap: theme.spacing.xs / 2, // Reduced gap between day letters
+    flexWrap: 'wrap',
   },
   daySquare: {
-    width: 14,
-    height: 18,
+    width: 16, // Smaller width
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    // Clean look with no background or border
   },
   dayText: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.regular,
+    fontSize: theme.typography.fontSize.xs, // 12px based on theme
+    fontFamily: theme.typography.fontFamily.regular, // Match the "One time" text style
     textAlign: 'center',
   },
   dayTextInactive: {
-    color: 'rgba(255, 255, 255, 0.3)',
+    color: 'rgba(255, 255, 255, 0.3)', // More subtle for unselected days
   },
 });

@@ -172,7 +172,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
     position: 'relative', // Allow absolute positioning for dropdown
   },
   card: {
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
   },
   days: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.xs,
     fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
     marginLeft: theme.spacing.xs,
@@ -224,10 +224,10 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
     ...Platform.select({
       ios: {
-        transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
+        transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }],
       },
       android: {
-        transform: [{ scaleX: 1.0 }, { scaleY: 1.0 }],
+        transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
       },
       web: {
         // Add subtle transition for web
@@ -246,18 +246,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: theme.spacing.xs,
-    gap: theme.spacing.xs / 4,
-    flexWrap: 'nowrap',
-    flex: 1,
+    gap: theme.spacing.xs / 3,
+    flexWrap: 'wrap',
   },
   daySquare: {
     width: 14,
-    height: 18,
+    height: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dayText: {
-    fontSize: theme.typography.fontSize.xs,
+    fontSize: 10,
     fontFamily: theme.typography.fontFamily.regular,
     textAlign: 'center',
   },

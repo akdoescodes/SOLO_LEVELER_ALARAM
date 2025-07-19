@@ -62,7 +62,6 @@ export function AlarmInsightCard({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.mainHeading}>Insights</Text>
       <View style={[styles.card, commonStyles.glassCard]}>
         {/* Next Alarm Section */}
         <View style={styles.section}>
@@ -81,13 +80,11 @@ export function AlarmInsightCard({
                   : "No alarms set"
                 }
               </GradientText>
-              {nextAlarmInfo?.timeRemaining && (
-                <Text style={styles.timeRemaining}>
-                  {nextAlarmInfo.timeRemaining}
-                </Text>
-              )}
             </View>
           </View>
+          <Text style={styles.timeRemaining}>
+            {nextAlarmInfo?.timeRemaining || ""}
+          </Text>
         </View>
 
         {/* Wake-Up Stats Section */}
@@ -126,86 +123,68 @@ export function AlarmInsightCard({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
-  },
-  mainHeading: {
-    fontSize: theme.typography.fontSize.xl,
-    fontFamily: theme.typography.fontFamily.medium,
-    color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
   card: {
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    ...theme.shadows.lg,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    ...theme.shadows.md,
   },
   section: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   nextAlarmRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    minHeight: 40,
+    alignItems: 'center',
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.medium,
     color: theme.colors.text.primary,
-    marginLeft: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
   },
   nextAlarmContent: {
     alignItems: 'flex-end',
-    flex: 1,
-    paddingLeft: theme.spacing.sm,
   },
   nextAlarmTime: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.bold,
     textAlign: 'right',
-    lineHeight: 20,
   },
   timeRemaining: {
-    fontSize: theme.typography.fontSize.sm,
-    fontFamily: theme.typography.fontFamily.medium,
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
-    textAlign: 'right',
-    marginTop: 4,
-    opacity: 0.8,
+    textAlign: 'center',
+    marginTop: theme.spacing.xs,
   },
   statsContent: {
     flexDirection: 'row',
-    gap: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   statItem: {
     alignItems: 'center',
-    minWidth: 45,
   },
   statValue: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.xs,
     fontFamily: theme.typography.fontFamily.bold,
     textAlign: 'center',
-    marginBottom: 4,
-    lineHeight: 16,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.medium,
+    fontSize: 9,
+    fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    opacity: 0.7,
   },
 });

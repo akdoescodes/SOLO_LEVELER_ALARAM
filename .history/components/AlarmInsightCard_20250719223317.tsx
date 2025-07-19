@@ -62,7 +62,6 @@ export function AlarmInsightCard({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.mainHeading}>Insights</Text>
       <View style={[styles.card, commonStyles.glassCard]}>
         {/* Next Alarm Section */}
         <View style={styles.section}>
@@ -81,41 +80,37 @@ export function AlarmInsightCard({
                   : "No alarms set"
                 }
               </GradientText>
-              {nextAlarmInfo?.timeRemaining && (
-                <Text style={styles.timeRemaining}>
-                  {nextAlarmInfo.timeRemaining}
-                </Text>
-              )}
             </View>
           </View>
+          <Text style={styles.timeRemaining}>
+            {nextAlarmInfo?.timeRemaining || ""}
+          </Text>
         </View>
 
         {/* Wake-Up Stats Section */}
         <View style={styles.section}>
-          <View style={styles.statsRow}>
-            <View style={styles.sectionHeader}>
-              <GradientIcon icon={TrendingUp} size={16} />
-              <Text style={styles.sectionTitle}>Wake-Up Stats</Text>
+          <View style={styles.sectionHeader}>
+            <GradientIcon icon={TrendingUp} size={18} />
+            <Text style={styles.sectionTitle}>Wake-Up Stats</Text>
+          </View>
+          <View style={styles.statsContent}>
+            <View style={styles.statItem}>
+              <GradientText
+                style={styles.statValue}
+                colors={theme.colors.gradient.primary}
+              >
+                {wakeUpStats.streak > 0 ? `${wakeUpStats.streak} days` : 'No streak'}
+              </GradientText>
+              <Text style={styles.statLabel}>Streak</Text>
             </View>
-            <View style={styles.statsContent}>
-              <View style={styles.statItem}>
-                <GradientText
-                  style={styles.statValue}
-                  colors={theme.colors.gradient.primary}
-                >
-                  {wakeUpStats.streak > 0 ? `${wakeUpStats.streak} days` : 'No streak'}
-                </GradientText>
-                <Text style={styles.statLabel}>Streak</Text>
-              </View>
-              <View style={styles.statItem}>
-                <GradientText
-                  style={styles.statValue}
-                  colors={theme.colors.gradient.primary}
-                >
-                  {wakeUpStats.avgWakeTime}
-                </GradientText>
-                <Text style={styles.statLabel}>Average</Text>
-              </View>
+            <View style={styles.statItem}>
+              <GradientText
+                style={styles.statValue}
+                colors={theme.colors.gradient.primary}
+              >
+                {wakeUpStats.avgWakeTime}
+              </GradientText>
+              <Text style={styles.statLabel}>Average</Text>
             </View>
           </View>
         </View>
@@ -126,86 +121,59 @@ export function AlarmInsightCard({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
-  },
-  mainHeading: {
-    fontSize: theme.typography.fontSize.xl,
-    fontFamily: theme.typography.fontFamily.medium,
-    color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
   card: {
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    ...theme.shadows.lg,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    ...theme.shadows.md,
   },
   section: {
     marginBottom: theme.spacing.md,
   },
-  nextAlarmRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    minHeight: 40,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    minHeight: 32,
-  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    marginBottom: theme.spacing.sm,
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.medium,
     color: theme.colors.text.primary,
-    marginLeft: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
   },
   nextAlarmContent: {
-    alignItems: 'flex-end',
-    flex: 1,
-    paddingLeft: theme.spacing.sm,
+    alignItems: 'center',
   },
   nextAlarmTime: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bold,
-    textAlign: 'right',
-    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xs,
   },
   timeRemaining: {
-    fontSize: theme.typography.fontSize.sm,
-    fontFamily: theme.typography.fontFamily.medium,
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
-    textAlign: 'right',
-    marginTop: 4,
-    opacity: 0.8,
+    textAlign: 'center',
   },
   statsContent: {
     flexDirection: 'row',
-    gap: theme.spacing.lg,
+    justifyContent: 'space-around',
   },
   statItem: {
     alignItems: 'center',
-    minWidth: 45,
   },
   statValue: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.bold,
     textAlign: 'center',
-    marginBottom: 4,
-    lineHeight: 16,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.medium,
+    fontSize: 10,
+    fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    opacity: 0.7,
   },
 });

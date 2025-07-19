@@ -62,7 +62,7 @@ export function AlarmInsightCard({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.mainHeading}>Insights</Text>
+      <Text style={styles.mainHeading}>Alarm Insights</Text>
       <View style={[styles.card, commonStyles.glassCard]}>
         {/* Next Alarm Section */}
         <View style={styles.section}>
@@ -127,7 +127,6 @@ export function AlarmInsightCard({
 const styles = StyleSheet.create({
   container: {
     marginBottom: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
   },
   mainHeading: {
     fontSize: theme.typography.fontSize.xl,
