@@ -138,13 +138,6 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingBottom: 100, // Account for tab bar height + extra spacing
   },
-  sectionTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontFamily: theme.typography.fontFamily.medium,
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.md,
-    marginTop: theme.spacing.lg,
-  },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
