@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
     ...Platform.select({
       ios: {
-        transform: [{ scaleX: 1.12 }, { scaleY: 1.12 }], // Bigger on iOS
+        transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
       },
       android: {
-        transform: [{ scaleX: 1.12 }, { scaleY: 1.12 }], // Bigger on Android
+        transform: [{ scaleX: 1.0 }, { scaleY: 1.0 }],
       },
       web: {
-        transform: [{ scale: 1.2 }], // Bigger on web
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth professional animation
+        // Add subtle transition for web
+        transition: 'all 0.3s ease-in-out',
       },
     }),
   },

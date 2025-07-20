@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
     ...Platform.select({
       ios: {
-        transform: [{ scaleX: 1.12 }, { scaleY: 1.12 }], // Bigger on iOS
+        transform: [{ scaleX: 1.12 }, { scaleY: 1.13 }], // Bigger on iOS
       },
       android: {
         transform: [{ scaleX: 1.12 }, { scaleY: 1.12 }], // Bigger on Android

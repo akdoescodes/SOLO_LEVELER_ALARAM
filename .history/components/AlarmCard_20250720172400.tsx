@@ -140,7 +140,16 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                 }}
                 thumbColor={alarm.enabled ? theme.colors.gradient.primary[0] : "rgba(255, 255, 255, 0.9)"} // Blue thumb when on
                 ios_backgroundColor="rgba(255, 255, 255, 0.15)"
-                style={styles.switch}
+                style={[
+                  styles.switch,
+                  Platform.OS === 'android' && {
+                    // Android ripple effect colors
+                    ...(alarm.enabled 
+                      ? { borderColor: '#00ff8840' } // Green ripple when turning on
+                      : { borderColor: 'rgba(255, 255, 255, 0.3)' } // White ripple when turning off
+                    )
+                  }
+                ]}
               />
               <View style={styles.menuContainer}>
                 <TouchableOpacity 

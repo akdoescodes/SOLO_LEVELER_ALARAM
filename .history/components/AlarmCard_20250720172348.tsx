@@ -140,6 +140,8 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                 }}
                 thumbColor={alarm.enabled ? theme.colors.gradient.primary[0] : "rgba(255, 255, 255, 0.9)"} // Blue thumb when on
                 ios_backgroundColor="rgba(255, 255, 255, 0.15)"
+                activeThumbColor={alarm.enabled ? '#00ff88' : 'rgba(255, 255, 255, 0.9)'} // Green ripple when turning on, white when turning off
+                activeTrackColor={alarm.enabled ? '#00ff8840' : 'rgba(255, 255, 255, 0.2)'} // Green track ripple when on, white when off
                 style={styles.switch}
               />
               <View style={styles.menuContainer}>

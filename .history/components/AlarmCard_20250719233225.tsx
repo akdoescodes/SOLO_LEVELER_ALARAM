@@ -135,11 +135,11 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                 value={alarm.enabled}
                 onValueChange={onToggle}
                 trackColor={{ 
-                  false: 'rgba(255, 255, 255, 0.15)', 
-                  true: theme.colors.gradient.primary[1] // Full blue color when on
+                  false: 'rgba(255, 255, 255, 0.2)', // More subtle when off
+                  true: `${theme.colors.gradient.primary[1]}80` // Add transparency for subtlety
                 }}
-                thumbColor={alarm.enabled ? theme.colors.gradient.primary[0] : "rgba(255, 255, 255, 0.9)"} // Blue thumb when on
-                ios_backgroundColor="rgba(255, 255, 255, 0.15)"
+                thumbColor={alarm.enabled ? "white" : "rgba(255, 255, 255, 0.8)"} // Slightly transparent when off
+                ios_backgroundColor="rgba(255, 255, 255, 0.2)"
                 style={styles.switch}
               />
               <View style={styles.menuContainer}>
@@ -172,7 +172,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.smmid,
     position: 'relative', // Allow absolute positioning for dropdown
   },
   card: {
@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
     ...Platform.select({
       ios: {
-        transform: [{ scaleX: 1.12 }, { scaleY: 1.12 }], // Bigger on iOS
+        transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
       },
       android: {
-        transform: [{ scaleX: 1.12 }, { scaleY: 1.12 }], // Bigger on Android
+        transform: [{ scaleX: 1.0 }, { scaleY: 1.0 }],
       },
       web: {
-        transform: [{ scale: 1.2 }], // Bigger on web
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth professional animation
+        // Add subtle transition for web
+        transition: 'all 0.3s ease-in-out',
       },
     }),
   },

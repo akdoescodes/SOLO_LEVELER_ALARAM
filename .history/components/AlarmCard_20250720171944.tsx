@@ -122,7 +122,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
           )}
           <View style={styles.content}>
             <View style={styles.leftContent}>
-              <Text style={[styles.time, { color: alarm.enabled ? theme.colors.text.primary : 'rgba(255, 255, 255, 0.5)' }]}>
+              <Text style={[styles.time, { color: alarm.enabled ? theme.colors.text.primary : 'rgba(64, 255, 0, 0.5)' }]}>
                 {alarm.time}
               </Text>
               <View style={styles.infoRow}>

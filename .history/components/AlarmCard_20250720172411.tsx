@@ -136,9 +136,9 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                 onValueChange={onToggle}
                 trackColor={{ 
                   false: 'rgba(255, 255, 255, 0.15)', 
-                  true: theme.colors.gradient.primary[1] // Full blue color when on
+                  true: '#00ff88' // Green track when on for better ripple effect
                 }}
-                thumbColor={alarm.enabled ? theme.colors.gradient.primary[0] : "rgba(255, 255, 255, 0.9)"} // Blue thumb when on
+                thumbColor={alarm.enabled ? 'white' : "rgba(255, 255, 255, 0.9)"} // White thumb always for contrast
                 ios_backgroundColor="rgba(255, 255, 255, 0.15)"
                 style={styles.switch}
               />
