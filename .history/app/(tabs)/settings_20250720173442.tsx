@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily.medium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.md,
   },
   settingCard: {
     marginBottom: theme.spacing.md,
