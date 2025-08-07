@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Clock } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useStorage } from '@/hooks/useStorage';
 import { useAlarmManager } from '@/hooks/useAlarmManager';
 import { AlarmCard } from '@/components/AlarmCard';
@@ -15,6 +16,27 @@ export default function AlarmsScreen() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { stopAlarm } = useAlarmManager(alarms, settings.soundEnabled, settings.vibrationEnabled);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Set status bar for alarms page
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content', true);
+    
+    // Only set background color on Android - using red for testing
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
+    }
+  }, []);
+
+  // Also set status bar when page is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      StatusBar.setBarStyle('light-content', true);
+      
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
+      }
+    }, [])
+  );
 
   const toggleAlarm = (alarmId: string) => {
     const updatedAlarms = alarms.map(alarm =>
@@ -52,25 +74,34 @@ export default function AlarmsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Alarms</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <LinearGradient
-              colors={theme.colors.gradient.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.addButtonGradient}
+    <View style={[styles.container, { backgroundColor: theme.colors.headerBackground }]}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor={Platform.OS === 'android' ? theme.colors.statusBarBackground : undefined} 
+        translucent={true} 
+      />
+      <View style={styles.headerContainer}>
+        <SafeAreaView style={styles.headerSafeArea}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Alarms</Text>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowAddModal(true)}
             >
-              <Plus size={24} color={theme.colors.text.primary} />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
+              <LinearGradient
+                colors={theme.colors.gradient.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.addButtonGradient}
+              >
+                <Plus size={24} color={theme.colors.text.primary} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </View>
+      
+      <View style={styles.contentContainer}>
         <ScrollView 
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollViewContent}
@@ -118,16 +149,16 @@ export default function AlarmsScreen() {
             </>
           )}
         </ScrollView>
+      </View>
 
-        <AddAlarmModal
-          visible={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSave={(newAlarm) => {
-            saveAlarms([...alarms, newAlarm]);
-            setShowAddModal(false);
-          }}
-        />
-      </SafeAreaView>
+      <AddAlarmModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={(newAlarm) => {
+          saveAlarms([...alarms, newAlarm]);
+          setShowAddModal(false);
+        }}
+      />
     </View>
   );
 }
@@ -135,6 +166,16 @@ export default function AlarmsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    backgroundColor: theme.colors.headerBackground,
+  },
+  headerSafeArea: {
+    backgroundColor: theme.colors.headerBackground,
+  },
+  contentContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,
@@ -144,7 +185,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.md, // Shortened from lg to md
+    backgroundColor: 'transparent', // Remove background since parent handles it
   },
   title: {
     fontSize: theme.typography.fontSize['3xl'],

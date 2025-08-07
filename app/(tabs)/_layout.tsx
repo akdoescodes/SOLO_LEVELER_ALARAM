@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 0,
     elevation: 0,
-    backgroundColor: theme.colors.background, // Solid opaque background
+    backgroundColor: theme.colors.headerBackground, // Same color as header
   },
   tabBarBackground: {
     flex: 1,
@@ -142,6 +142,6 @@ const styles = StyleSheet.create({
   },
   solidBackground: {
     flex: 1,
-    backgroundColor: theme.colors.background, // Solid dark background
+    backgroundColor: theme.colors.headerBackground, // Same color as header
   },
 });

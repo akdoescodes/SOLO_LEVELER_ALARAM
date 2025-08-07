@@ -111,7 +111,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.lg, // Made it longer (was theme.spacing.sm)
+    backgroundColor: theme.colors.headerBackground, // Simple background color
   },
   title: {
     fontSize: theme.typography.fontSize['3xl'],

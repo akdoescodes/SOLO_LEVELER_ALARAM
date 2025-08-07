@@ -3,6 +3,12 @@ export const theme = {
     // App background
     background: '#010101',
     
+    // Header background
+    headerBackground: '#1a1a1a',
+    
+    // Status bar background (should match header)
+    statusBarBackground: '#1a1a1a', // Changed from red to match header
+    
     // Surface backgrounds
     surface: {
       primary: 'rgba(0, 0, 0, 0.5)', // bg-surface/50
