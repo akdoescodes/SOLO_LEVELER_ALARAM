@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useStorage } from '@/hooks/useStorage';
 import { Volume2, Vibrate, Clock, Plus, Minus } from 'lucide-react-native';
 import { theme, commonStyles } from '@/constants/theme';
@@ -10,6 +11,27 @@ import { IconWithLabel } from '@/components/IconWithLabel';
 
 export default function SettingsScreen() {
   const { settings, saveSettings, loaded } = useStorage();
+
+  // Set status bar for settings page
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content', true);
+    
+    // Only set background color on Android
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
+    }
+  }, []);
+
+  // Also set status bar when page is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      StatusBar.setBarStyle('light-content', true);
+      
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
+      }
+    }, [])
+  );
 
   const updateSetting = (key: keyof typeof settings, value: any) => {
     saveSettings({ ...settings, [key]: value });
@@ -26,12 +48,21 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
-        </View>
-
+    <View style={[styles.container, { backgroundColor: theme.colors.headerBackground }]}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor={Platform.OS === 'android' ? theme.colors.statusBarBackground : undefined} 
+        translucent={true} 
+      />
+      <View style={styles.headerContainer}>
+        <SafeAreaView style={styles.headerSafeArea}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Settings</Text>
+          </View>
+        </SafeAreaView>
+      </View>
+      
+      <View style={styles.contentContainer}>
         <ScrollView 
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollViewContent}
@@ -127,7 +158,7 @@ export default function SettingsScreen() {
             </View>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -135,6 +166,16 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    backgroundColor: theme.colors.headerBackground,
+  },
+  headerSafeArea: {
+    backgroundColor: theme.colors.headerBackground,
+  },
+  contentContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,
@@ -144,12 +185,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.lg, // Made it longer (was theme.spacing.sm)
-    backgroundColor: theme.colors.headerBackground, // Simple background color
+    paddingVertical: 2, // Made much smaller - same as alarms
+    backgroundColor: 'transparent', // Remove background since parent handles it
   },
   title: {
-    fontSize: theme.typography.fontSize['3xl'],
-    fontFamily: theme.typography.fontFamily.bold,
+    fontSize: theme.typography.fontSize['3xl'], // Keep 30px like alarms
+    fontFamily: theme.typography.fontFamily.medium, // Medium weight like alarms
     color: theme.colors.text.primary,
   },
   scrollView: {

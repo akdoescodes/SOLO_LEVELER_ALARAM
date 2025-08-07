@@ -8,7 +8,7 @@ import { useStorage } from '@/hooks/useStorage';
 import { useAlarmManager } from '@/hooks/useAlarmManager';
 import { AlarmCard } from '@/components/AlarmCard';
 import { AlarmInsightCard } from '@/components/AlarmInsightCard';
-import { AddAlarmModal } from '@/components/AddAlarmModal';
+import AddAlarmModal from '@/components/AddAlarmModal';
 import { theme, commonStyles } from '@/constants/theme';
 
 export default function AlarmsScreen() {
@@ -154,7 +154,7 @@ export default function AlarmsScreen() {
       <AddAlarmModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSave={(newAlarm) => {
+        onSave={(newAlarm: any) => {
           saveAlarms([...alarms, newAlarm]);
           setShowAddModal(false);
         }}
@@ -185,12 +185,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md, // Shortened from lg to md
+    paddingVertical: 2, // Made much smaller - about 15% of previous value (16px -> 2px)
     backgroundColor: 'transparent', // Remove background since parent handles it
   },
   title: {
-    fontSize: theme.typography.fontSize['3xl'],
-    fontFamily: theme.typography.fontFamily.bold,
+    fontSize: theme.typography.fontSize['3xl'], // Back to 3xl (30px)
+    fontFamily: theme.typography.fontFamily.medium, // Keep medium (less bold)
     color: theme.colors.text.primary,
   },
   addButton: {

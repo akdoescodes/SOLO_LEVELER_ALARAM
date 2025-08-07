@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, Alert, Plat
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Clock, Music, Upload } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { Alarm } from '@/types';
@@ -16,16 +17,47 @@ interface AddAlarmModalProps {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModalProps) {
+export default function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModalProps) {
+  const [title, setTitle] = useState('');
   const [name, setName] = useState('');
-  const [time, setTime] = useState('07:00');
+  const [time, setTime] = useState({ hours: 7, minutes: 0, seconds: 0 });
+  const [selectedSound, setSelectedSound] = useState('default');
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
-  const [soundUri, setSoundUri] = useState<string | undefined>();
-  const [soundName, setSoundName] = useState<string | undefined>();
+  const [soundUri, setSoundUri] = useState<string | undefined>(undefined);
+  const [soundName, setSoundName] = useState<string | undefined>(undefined);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // Create Date object for the time picker
+  const getDateFromTime = () => {
+    const date = new Date();
+    date.setHours(time.hours);
+    date.setMinutes(time.minutes);
+    date.setSeconds(0);
+    return date;
+  };
+
+  // Handle time change from DateTimePicker
+  const handleTimeChange = (event: any, selectedDate?: Date) => {
+    setShowTimePicker(Platform.OS === 'ios'); // Keep picker open on iOS
+    
+    if (selectedDate) {
+      const newTime = {
+        hours: selectedDate.getHours(),
+        minutes: selectedDate.getMinutes(),
+        seconds: 0
+      };
+      setTime(newTime);
+    }
+  };
+
+  // Format time for display
+  const formatTime = (timeObj: { hours: number; minutes: number }) => {
+    return `${timeObj.hours.toString().padStart(2, '0')}:${timeObj.minutes.toString().padStart(2, '0')}`;
+  };
 
   const resetForm = () => {
     setName('');
-    setTime('07:00');
+    setTime({ hours: 7, minutes: 0, seconds: 0 });
     setSelectedDays([]);
     setSoundUri(undefined);
     setSoundName(undefined);
@@ -68,25 +100,27 @@ export function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModalProps) 
     }
   };
 
-  const handleSave = () => {
+    const handleSave = () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter an alarm name');
       return;
     }
 
-    const newAlarm: Alarm = {
+    const timeString = `${time.hours.toString().padStart(2, '0')}:${time.minutes.toString().padStart(2, '0')}`;
+    
+    onSave({
       id: Date.now().toString(),
       name: name.trim(),
-      time,
+      time: timeString,
       enabled: true,
       days: selectedDays,
       soundUri,
       soundName,
       createdAt: Date.now(),
-    };
-
-    onSave(newAlarm);
+    });
+    
     resetForm();
+    onClose();
   };
 
   const handleClose = () => {
@@ -118,6 +152,34 @@ export function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModalProps) 
 
           <View style={styles.content}>
             <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Time</Text>
+              
+              {/* Time Display and Picker Button */}
+              <TouchableOpacity 
+                style={styles.timeContainer} 
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Clock size={24} color={theme.colors.text.accent} />
+                <Text style={styles.timeDisplay}>
+                  {formatTime(time)}
+                </Text>
+                <Text style={styles.timeHint}>Tap to change</Text>
+              </TouchableOpacity>
+
+              {/* DateTime Picker */}
+              {showTimePicker && (
+                <DateTimePicker
+                  value={getDateFromTime()}
+                  mode="time"
+                  is24Hour={true}
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleTimeChange}
+                  style={styles.timePicker}
+                />
+              )}
+            </View>
+
+            <View style={styles.section}>
               <Text style={styles.sectionTitle}>Alarm Name</Text>
               <TextInput
                 style={styles.input}
@@ -126,20 +188,6 @@ export function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModalProps) 
                 placeholder="Enter alarm name"
                 placeholderTextColor={theme.colors.text.secondary}
               />
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Time</Text>
-              <View style={styles.timeContainer}>
-                <Clock size={24} color={theme.colors.text.accent} />
-                <TextInput
-                  style={styles.timeInput}
-                  value={time}
-                  onChangeText={setTime}
-                  placeholder="HH:MM"
-                  placeholderTextColor={theme.colors.text.secondary}
-                />
-              </View>
             </View>
 
             <View style={styles.section}>
@@ -243,12 +291,32 @@ const styles = StyleSheet.create({
     ...commonStyles.glassCard,
     padding: theme.spacing.md,
   },
-  timeInput: {
+  timeDisplay: {
     flex: 1,
     marginLeft: theme.spacing.md,
-    fontSize: theme.typography.fontSize.base,
-    fontFamily: theme.typography.fontFamily.regular,
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.medium,
     color: theme.colors.text.primary,
+  },
+  timeHint: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+  },
+  timePicker: {
+    marginTop: theme.spacing.md,
+  },
+  doneButton: {
+    marginTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.text.accent,
+    borderRadius: theme.borderRadius.md,
+  },
+  doneButtonText: {
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.medium,
   },
   soundContainer: {
     flexDirection: 'row',
