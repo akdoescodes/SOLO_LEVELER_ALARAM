@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Platform } from 'react-native';
 import { AudioPlayer, useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
@@ -8,41 +8,57 @@ import { Alarm } from '@/types';
 export function useAlarmManager(alarms: Alarm[], soundEnabled: boolean, vibrationEnabled: boolean) {
   const intervalRef = useRef<number | null>(null);
   const activeAlarmRef = useRef<string | null>(null);
+  const stoppedAlarmsRef = useRef<Set<string>>(new Set());
   const audioPlayer = useAudioPlayer();
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const playAlarmSound = useCallback(async (alarm: Alarm) => {
-    if (!soundEnabled) return;
+    if (!soundEnabled || stoppedAlarmsRef.current.has(alarm.id)) return;
 
     try {
+      // Stop any currently playing sound first
+      if (audioPlayer.playing) {
+        audioPlayer.pause();
+      }
+
       // Use a built-in system sound or skip sound if no custom sound is provided
       if (alarm.soundUri) {
         // Load and play the custom sound
         audioPlayer.replace(alarm.soundUri);
         audioPlayer.loop = true;
         audioPlayer.play();
+        setIsPlaying(true);
       } else {
-        // You can use a system sound here or create a default beep
-        console.log('No custom sound provided, using system default');
-        // For now, we'll just log this - you could add a default alarm sound file
+        // Log only once, not continuously
+        if (!isPlaying) {
+          console.log('No custom sound provided, using system default');
+        }
+        // For now, we'll just set isPlaying to true to indicate alarm is active
+        setIsPlaying(true);
       }
     } catch (error) {
       console.log('Error playing alarm sound:', error);
     }
-  }, [soundEnabled, audioPlayer]);
+  }, [soundEnabled, audioPlayer, isPlaying]);
 
   const stopSound = useCallback(async () => {
     try {
       if (audioPlayer.playing) {
         audioPlayer.pause();
-        audioPlayer.replace(''); // Clear the source
       }
+      // Clear the audio source to ensure it stops completely
+      audioPlayer.loop = false;
+      // Reset to ensure clean state
+      audioPlayer.currentTime = 0;
+      setIsPlaying(false);
     } catch (error) {
       console.log('Error stopping sound:', error);
     }
   }, [audioPlayer]);
 
   const triggerAlarm = useCallback(async (alarm: Alarm) => {
-    activeAlarmRef.current = alarm.id;
+    // Prevent triggering if already stopped
+    if (stoppedAlarmsRef.current.has(alarm.id)) return;
     
     // Play alarm sound
     await playAlarmSound(alarm);
@@ -69,10 +85,13 @@ export function useAlarmManager(alarms: Alarm[], soundEnabled: boolean, vibratio
       alarm.enabled && 
       alarm.time === currentTime &&
       (alarm.days.length === 0 || alarm.days.includes(currentDay)) &&
-      activeAlarmRef.current !== alarm.id
+      activeAlarmRef.current !== alarm.id &&
+      !stoppedAlarmsRef.current.has(alarm.id)
     );
 
     if (activeAlarm) {
+      // Mark as triggered immediately to prevent multiple triggers
+      activeAlarmRef.current = activeAlarm.id;
       triggerAlarm(activeAlarm);
     }
   }, [alarms, triggerAlarm]);
@@ -97,10 +116,56 @@ export function useAlarmManager(alarms: Alarm[], soundEnabled: boolean, vibratio
     };
   }, [startAlarmChecker, stopSound]);
 
+  // Clear stopped alarms at midnight
+  useEffect(() => {
+    const now = new Date();
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+    
+    const timer = setTimeout(() => {
+      stoppedAlarmsRef.current.clear();
+      // Set up daily clearing
+      const dailyTimer = setInterval(() => {
+        stoppedAlarmsRef.current.clear();
+      }, 24 * 60 * 60 * 1000);
+      
+      return () => clearInterval(dailyTimer);
+    }, msUntilMidnight);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   const stopAlarm = useCallback(async (alarmId: string) => {
-    activeAlarmRef.current = null;
+    console.log('Stopping alarm:', alarmId);
+    
+    // Mark alarm as stopped to prevent reactivation
+    stoppedAlarmsRef.current.add(alarmId);
+    
+    // Clear active alarm reference
+    if (activeAlarmRef.current === alarmId) {
+      activeAlarmRef.current = null;
+    }
+    
+    // Stop the sound
     await stopSound();
+    
+    console.log('Alarm stopped successfully');
   }, [stopSound]);
 
-  return { stopAlarm };
+  const snoozeAlarm = useCallback(async (alarmId: string, snoozeMinutes: number = 5) => {
+    console.log(`Alarm snoozed until ${new Date(Date.now() + snoozeMinutes * 60 * 1000).toLocaleTimeString()}`);
+    
+    // Stop the current alarm
+    await stopAlarm(alarmId);
+    
+    // Remove from stopped alarms after snooze time to allow it to ring again
+    setTimeout(() => {
+      stoppedAlarmsRef.current.delete(alarmId);
+    }, snoozeMinutes * 60 * 1000);
+  }, [stopAlarm]);
+
+  return { 
+    stopAlarm,
+    snoozeAlarm,
+    isPlaying
+  };
 }

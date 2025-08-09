@@ -16,6 +16,31 @@ export default function AlarmsScreen() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { stopAlarm } = useAlarmManager(alarms, settings.soundEnabled, settings.vibrationEnabled);
   const [showAddModal, setShowAddModal] = useState(false);
+  
+  // Scroll enhancement states
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+  const [showEndIndicator, setShowEndIndicator] = useState(false);
+
+  // Handle scroll events for progress and end detection
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollPosition = contentOffset.y;
+    const contentHeight = contentSize.height;
+    const screenHeight = layoutMeasurement.height;
+    
+    // Calculate scroll progress (0 to 1)
+    const maxScroll = contentHeight - screenHeight;
+    const progress = maxScroll > 0 ? scrollPosition / maxScroll : 0;
+    setScrollProgress(Math.min(Math.max(progress, 0), 1));
+    
+    // Check if near bottom (within 50px)
+    const isNearBottom = scrollPosition + screenHeight >= contentHeight - 50;
+    setIsAtBottom(isNearBottom);
+    
+    // Show end indicator when scrolled past 80% and there's content to scroll
+    setShowEndIndicator(progress > 0.8 && maxScroll > 100);
+  };
 
   // Set status bar for alarms page
   useEffect(() => {
@@ -105,7 +130,12 @@ export default function AlarmsScreen() {
         <ScrollView 
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          bounces={true}
+          alwaysBounceVertical={true}
+          indicatorStyle="white"
         >
           {alarms.length === 0 ? (
             <View style={styles.emptyState}>
@@ -147,6 +177,11 @@ export default function AlarmsScreen() {
                   />
                 ))}
             </>
+          )}
+          
+          {/* End spacing for visual breathing room */}
+          {alarms.length > 0 && (
+            <View style={styles.endSpacing} />
           )}
         </ScrollView>
       </View>
@@ -240,5 +275,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
     textAlignVertical: 'center',
+  },
+  endSpacing: {
+    height: theme.spacing.xl * 2, // Extra spacing at the end for visual breathing room
+    marginTop: theme.spacing.lg,
   },
 });

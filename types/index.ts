@@ -7,6 +7,8 @@ export interface Alarm {
   soundUri?: string;
   soundName?: string;
   createdAt: number;
+  startDate?: string; // ISO string for start date
+  endDate?: string | null; // ISO string for end date, null means permanent
 }
 
 export interface Quote {

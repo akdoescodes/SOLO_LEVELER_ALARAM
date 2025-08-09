@@ -13,6 +13,27 @@ export default function QuotesScreen() {
   const { quotes, saveQuotes, loaded } = useStorage();
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Scroll enhancement states
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+
+  // Handle scroll events for progress and end detection
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollPosition = contentOffset.y;
+    const contentHeight = contentSize.height;
+    const screenHeight = layoutMeasurement.height;
+    
+    // Calculate scroll progress (0 to 1)
+    const maxScroll = contentHeight - screenHeight;
+    const progress = maxScroll > 0 ? scrollPosition / maxScroll : 0;
+    setScrollProgress(Math.min(Math.max(progress, 0), 1));
+    
+    // Check if near bottom (within 50px)
+    const isNearBottom = scrollPosition + screenHeight >= contentHeight - 50;
+    setIsAtBottom(isNearBottom);
+  };
+
   // Set status bar for quotes page
   useEffect(() => {
     StatusBar.setBarStyle('light-content', true);
@@ -94,7 +115,12 @@ export default function QuotesScreen() {
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={true}
+        alwaysBounceVertical={true}
+        indicatorStyle="white"
       >
           {quotes.length === 0 ? (
             <View style={styles.emptyState}>
@@ -115,6 +141,9 @@ export default function QuotesScreen() {
                   showDeleteButton={true}
                 />
               ))}
+              
+              {/* End spacing for visual breathing room */}
+              <View style={styles.endSpacing} />
             </>
           )}
         </ScrollView>
@@ -217,5 +246,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
     textAlignVertical: 'center',
+  },
+  endSpacing: {
+    height: theme.spacing.xl * 2, // Extra spacing at the end for visual breathing room
+    marginTop: theme.spacing.lg,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +11,27 @@ import { IconWithLabel } from '@/components/IconWithLabel';
 
 export default function SettingsScreen() {
   const { settings, saveSettings, loaded } = useStorage();
+
+  // Scroll enhancement states
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+
+  // Handle scroll events for progress and end detection
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollPosition = contentOffset.y;
+    const contentHeight = contentSize.height;
+    const screenHeight = layoutMeasurement.height;
+    
+    // Calculate scroll progress (0 to 1)
+    const maxScroll = contentHeight - screenHeight;
+    const progress = maxScroll > 0 ? scrollPosition / maxScroll : 0;
+    setScrollProgress(Math.min(Math.max(progress, 0), 1));
+    
+    // Check if near bottom (within 50px)
+    const isNearBottom = scrollPosition + screenHeight >= contentHeight - 50;
+    setIsAtBottom(isNearBottom);
+  };
 
   // Set status bar for settings page
   useEffect(() => {
@@ -66,7 +87,12 @@ export default function SettingsScreen() {
         <ScrollView 
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          bounces={true}
+          alwaysBounceVertical={true}
+          indicatorStyle="white"
         >
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Alarm Settings</Text>
@@ -157,6 +183,9 @@ export default function SettingsScreen() {
               <Text style={styles.versionText}>Version 1.0.0</Text>
             </View>
           </View>
+          
+          {/* End spacing for visual breathing room */}
+          <View style={styles.endSpacing} />
         </ScrollView>
       </View>
     </View>
@@ -305,5 +334,9 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.regular,
+  },
+  endSpacing: {
+    height: theme.spacing.xl * 2, // Extra spacing at the end for visual breathing room
+    marginTop: theme.spacing.lg,
   },
 });
