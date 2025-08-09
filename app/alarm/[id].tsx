@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Platform, StatusBar, Switch, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PanGestureHandler } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -39,11 +40,22 @@ export default function AlarmScreen() {
   const { saveAlarms } = useStorage();
   
   // Use static alarm data to prevent re-renders
-  const { stopAlarm, snoozeAlarm, isPlaying } = useAlarmManager(
+  const alarmManager = useAlarmManager(
     staticData?.alarm ? [staticData.alarm] : [], 
     staticData?.settings?.soundEnabled || false, 
     staticData?.settings?.vibrationEnabled || false
   );
+  
+  // Stable refs to functions to prevent re-renders from function identity changes
+  const stableStopAlarm = useRef(alarmManager.stopAlarm).current;
+  const stableSnoozeAlarm = useRef(alarmManager.snoozeAlarm).current;
+  
+  // Store isPlaying in a ref to prevent re-renders
+  const isPlayingRef = useRef(alarmManager.isPlaying);
+  // Update the ref value when it changes, but don't re-render
+  useEffect(() => {
+    isPlayingRef.current = alarmManager.isPlaying;
+  }, [alarmManager.isPlaying]);
   
   // Stable quotes - memoized to prevent re-shuffling
   const stableQuotes = useMemo(() => {
@@ -58,49 +70,47 @@ export default function AlarmScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [alarmStopped, setAlarmStopped] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Create a stable ref for quotes to show to prevent resetting
+  const quotesToShowRef = useRef<Quote[]>([]);
+  
+  // Update the ref when quotesToShow changes but don't trigger re-renders
+  useEffect(() => {
+    if (quotesToShow.length > 0) {
+      quotesToShowRef.current = quotesToShow;
+    }
+  }, [quotesToShow]);
 
   // Load data only once on mount
   useEffect(() => {
     const loadStaticData = async () => {
-      const { alarms, quotes, settings } = await import('@/hooks/useStorage').then(
-        async (module) => {
-          // Create a temporary instance to get data
-          const tempStorage = new Promise<any>((resolve) => {
-            // We'll get the current data without subscribing to changes
-            const getCurrentData = async () => {
-              try {
-                const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-                const [alarmsData, quotesData, settingsData] = await Promise.all([
-                  AsyncStorage.getItem('alarms'),
-                  AsyncStorage.getItem('quotes'),
-                  AsyncStorage.getItem('settings'),
-                ]);
-                
-                const alarms = alarmsData ? JSON.parse(alarmsData) : [];
-                const quotes = quotesData ? JSON.parse(quotesData) : [];
-                const settings = settingsData ? JSON.parse(settingsData) : {};
-                
-                resolve({ alarms, quotes, settings });
-              } catch (error) {
-                console.error('Error loading static data:', error);
-                resolve({ alarms: [], quotes: [], settings: {} });
-              }
-            };
-            getCurrentData();
-          });
-          return tempStorage;
-        }
-      );
-      
-      const alarm = alarms.find((a: any) => a.id === id);
-      setStaticData({ alarm, quotes, settings });
+      try {
+        // Load data directly from AsyncStorage
+        const [alarmsData, quotesData, settingsData] = await Promise.all([
+          AsyncStorage.getItem('alarms'),
+          AsyncStorage.getItem('quotes'),
+          AsyncStorage.getItem('settings'),
+        ]);
+        
+        const alarms = alarmsData ? JSON.parse(alarmsData) : [];
+        const quotes = quotesData ? JSON.parse(quotesData) : [];
+        const settings = settingsData ? JSON.parse(settingsData) : {};
+        
+        // Find matching alarm
+        const alarm = alarms.find((a: any) => a.id === id);
+        setStaticData({ alarm, quotes, settings });
+      } catch (error) {
+        console.error('Error loading static data:', error);
+        setStaticData({ alarm: null, quotes: [], settings: {} });
+      }
     };
     
     if (!staticData) {
       loadStaticData();
     }
-  }, [id, staticData]);
+  }, [id, staticData]); // Only depend on id and staticData
 
+  // Shared values for animations - created only once and never modified by refs
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
@@ -108,7 +118,7 @@ export default function AlarmScreen() {
 
   const handleStopAlarm = async () => {
     if (id && !alarmStopped) {
-      await stopAlarm(id as string);
+      await stableStopAlarm(id as string);
       setAlarmStopped(true);
       await WakeUpStatsManager.recordWakeUp();
       router.back();
@@ -117,7 +127,7 @@ export default function AlarmScreen() {
 
   const handleSnoozeAlarm = async () => {
     if (id && !alarmStopped) {
-      await snoozeAlarm(id as string, 5);
+      await stableSnoozeAlarm(id as string, 5);
       setAlarmStopped(true);
       router.back();
     }
@@ -136,25 +146,47 @@ export default function AlarmScreen() {
     return () => StatusBar.setHidden(false);
   }, []);
 
-  // Initialize quotes only once when component mounts - STABLE VERSION
+  // Initialize quotes only once when component mounts - ULTRA STABLE VERSION
   useEffect(() => {
+    // Only run this effect once when stableQuotes are available
     if (!isInitialized && stableQuotes.length > 0) {
-      setQuotesToShow(stableQuotes);
-      setIsInitialized(true);
+      // Create a deep copy with new object IDs to ensure complete isolation
+      const deepCopyQuotes = stableQuotes.map((quote, index) => ({
+        ...quote,
+        // Adding timestamp ensures no ID conflicts even with same quotes
+        id: `${quote.id}-${Date.now()}-${index}`
+      }));
+      
+      // Update both state and ref atomically
+      quotesToShowRef.current = deepCopyQuotes;
+      setQuotesToShow(deepCopyQuotes);
+      
+      // Mark initialization complete only after setting both state and ref
+      setTimeout(() => {
+        setIsInitialized(true);
+      }, 100);
     }
   }, [isInitialized, stableQuotes]); // Use stableQuotes which won't change
 
-  // Haptic feedback pattern - run only once when initialized
+  // Haptic feedback pattern - run only once when initialized and made more subtle
   useEffect(() => {
-    if (Platform.OS !== 'web' && staticData?.settings?.vibrationEnabled && !alarmStopped && isInitialized) {
+    // Capture vibration setting in a ref to prevent re-renders
+    const vibrationEnabled = staticData?.settings?.vibrationEnabled || false;
+    
+    if (Platform.OS !== 'web' && vibrationEnabled && !alarmStopped && isInitialized) {
+      // Initial haptic feedback when alarm screen loads
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // More subtle interval with lighter impact
       const interval = setInterval(() => {
         if (!alarmStopped) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-      }, 2000);
+      }, 4000); // Less frequent - every 4 seconds
+      
       return () => clearInterval(interval);
     }
-  }, [staticData?.settings?.vibrationEnabled, alarmStopped, isInitialized]);
+  }, [alarmStopped, isInitialized]); // Only depend on alarm status and initialization
 
   useEffect(() => {
     // Subtle pulse animation
@@ -165,57 +197,124 @@ export default function AlarmScreen() {
     );
   }, []);
 
-  const onSwipeComplete = async () => {
-    const nextIndex = currentIndex + 1;
+  // Use a ref to track the last swipe time to prevent accidental double swipes
+  const lastSwipeTimeRef = useRef(0);
+  
+  // Create a function to handle swipe completion that uses the stable ref
+  const handleSwipeComplete = async (direction: 'left' | 'right') => {
+    // Debounce swipes to prevent accidental double swipes
+    const now = Date.now();
+    if (now - lastSwipeTimeRef.current < 500) {
+      return; // Ignore swipes that happen too quickly after the last one
+    }
+    lastSwipeTimeRef.current = now;
     
-    if (nextIndex >= quotesToShow.length) {
-      // All quotes swiped - dismiss alarm
+    const nextIndex = currentIndex + 1;
+    // Use the stable ref for length check to prevent inconsistencies
+    const stableLength = quotesToShowRef.current.length;
+    const quotesRequired = staticData?.settings?.quotesRequired || 1;
+    
+    if (nextIndex >= stableLength || nextIndex >= quotesRequired) {
+      // All quotes swiped or reached required quotes count - dismiss alarm
       if (id && !alarmStopped) {
-        await stopAlarm(id as string);
+        await stableStopAlarm(id as string);
         setAlarmStopped(true);
         await WakeUpStatsManager.recordWakeUp();
-        router.back();
+        
+        // Add a small delay before navigation to ensure state is properly updated
+        setTimeout(() => {
+          router.back();
+        }, 300);
       }
     } else {
       // Move to next quote with smooth transition
       setCurrentIndex(nextIndex);
-      // Reset animation values for next card with slight delay for smoothness
-      setTimeout(() => {
-        translateX.value = 0;
-        opacity.value = withTiming(1, { duration: 300 });
-        scale.value = withTiming(1, { duration: 300 });
-      }, 100);
+      // Animation values will be reset in the useEffect below
     }
   };
+  
+  // Reset animation values when currentIndex changes - in a completely safe way
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure we're not modifying values during animation
+    let frameId: number;
+    
+    const resetAnimations = () => {
+      translateX.value = 0;
+      opacity.value = 1;
+      scale.value = 1;
+    };
+    
+    // Double RAF to ensure we're outside any animation frame
+    frameId = requestAnimationFrame(() => {
+      frameId = requestAnimationFrame(() => {
+        resetAnimations();
+      });
+    });
+    
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+    };
+  }, [currentIndex, translateX, opacity, scale]);
 
+  // Using a completely worklet-safe approach with no JS object modifications
   const gestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
+    // Store state in the context object to avoid accessing JS world variables
+    onStart: (_event, context: any) => {
+      // Initialize context values as primitive types only
+      context.startX = 0;
+      context.active = true;
+      
+      // We use a pure worklet function without any JS world interactions
       if (Platform.OS !== 'web') {
         runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
       }
     },
-    onActive: (event) => {
+    onActive: (event, context: any) => {
+      // Only process gesture if context is active (prevents double processing)
+      if (!context.active) return;
+      
+      // Direct manipulation of animated values using only primitive operations
       translateX.value = event.translationX;
       const progress = Math.abs(event.translationX) / SWIPE_THRESHOLD;
       opacity.value = interpolate(progress, [0, 1], [1, 0.3], 'clamp');
       scale.value = interpolate(progress, [0, 1], [1, 0.8], 'clamp');
     },
-    onEnd: (event) => {
-      if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
-        // Complete the swipe
+    onEnd: (event, context: any) => {
+      // Prevent processing if not active
+      if (!context.active) return;
+      
+      // Simple logic with primitive values only - all contained within the worklet
+      const minVelocity = 150;
+      const isSwipedBeyondThreshold = Math.abs(event.translationX) > SWIPE_THRESHOLD;
+      const isSwipedWithSpeed = Math.abs(event.velocityX) > minVelocity;
+      const direction = event.translationX > 0 ? 'right' : 'left';
+      
+      // Mark as inactive to prevent double processing
+      context.active = false;
+      
+      if (isSwipedBeyondThreshold || isSwipedWithSpeed) {
+        // Use a sequential animation pattern to prevent conflicts
+        // First animate position
         translateX.value = withSpring(
-          event.translationX > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH,
+          direction === 'right' ? SCREEN_WIDTH : -SCREEN_WIDTH,
           { damping: 15, stiffness: 150 }
         );
-        opacity.value = withSpring(0);
-        scale.value = withSpring(0.5, {}, () => {
-          runOnJS(onSwipeComplete)();
-        });
+        
+        // Then animate opacity with a slight delay
+        opacity.value = withDelay(50, withTiming(0, { duration: 200 }));
+        
+        // Finally animate scale and trigger callback
+        scale.value = withDelay(100, withTiming(0.5, { duration: 200 }, () => {
+          // Call JS function with primitive value only
+          runOnJS(handleSwipeComplete)(direction);
+        }));
       } else {
-        // Snap back
-        translateX.value = withSpring(0);
-        opacity.value = withSpring(1);
-        scale.value = withSpring(1);
+        // Snap back with sequential animations
+        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+        opacity.value = withTiming(1, { duration: 200 });
+        scale.value = withTiming(1, { duration: 200 });
       }
     },
   });
@@ -232,18 +331,31 @@ export default function AlarmScreen() {
     transform: [{ scale: pulseScale.value }],
   }));
 
-  if (!staticData || !staticData.alarm || quotesToShow.length === 0 || !isInitialized) {
+  if (!staticData || !staticData.alarm) {
     return (
       <View style={styles.loadingContainer}>
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.background }]} />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading alarm data...</Text>
+      </View>
+    );
+  }
+  
+  // Separate condition to provide better feedback
+  if (quotesToShowRef.current.length === 0 || !isInitialized) {
+    return (
+      <View style={styles.loadingContainer}>
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.background }]} />
+        <Text style={styles.loadingText}>Preparing your quotes...</Text>
+        <Text style={styles.subLoadingText}>This will only take a moment</Text>
       </View>
     );
   }
 
-  const currentQuote = quotesToShow[currentIndex];
-  const progress = ((currentIndex) / quotesToShow.length) * 100;
-  const remaining = quotesToShow.length - currentIndex;
+  // Always use the ref for consistency
+  const currentQuote = quotesToShowRef.current[currentIndex];
+  const stableLength = quotesToShowRef.current.length;
+  const progress = ((currentIndex) / stableLength) * 100;
+  const remaining = stableLength - currentIndex;
 
   return (
     <View style={styles.container}>
@@ -276,12 +388,20 @@ export default function AlarmScreen() {
           </View>
         </Animated.View>
 
-        {/* Quick Action Buttons */}
+        {/* Quick Action Buttons - Made more prominent */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.snoozeButton} onPress={handleSnoozeAlarm}>
+          <TouchableOpacity 
+            style={[styles.snoozeButton, styles.actionButtonEnhanced]}
+            onPress={handleSnoozeAlarm}
+            activeOpacity={0.7}
+          >
             <Text style={styles.buttonText}>Snooze 5min</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.stopButton} onPress={handleStopAlarm}>
+          <TouchableOpacity 
+            style={[styles.stopButton, styles.actionButtonEnhanced]} 
+            onPress={handleStopAlarm}
+            activeOpacity={0.7}
+          >
             <Text style={styles.buttonText}>Stop Alarm</Text>
           </TouchableOpacity>
         </View>
@@ -298,10 +418,10 @@ export default function AlarmScreen() {
 
       {/* Quote Cards Stack */}
       <View style={styles.cardsContainer}>
-        {/* Background cards (stack effect) */}
-        {quotesToShow.slice(currentIndex + 1, currentIndex + 4).map((quote, index) => (
+        {/* Background cards (stack effect) - using stable quote IDs for keys */}
+        {quotesToShowRef.current.slice(currentIndex + 1, currentIndex + 4).map((quote, index) => (
           <Animated.View
-            key={`bg-${currentIndex + index + 1}`}
+            key={`bg-${quote.id || index}`} 
             style={[
               styles.backgroundCard,
               {
@@ -331,7 +451,7 @@ export default function AlarmScreen() {
             <View style={styles.quoteContent}>
               <View style={styles.quoteHeader}>
                 <Text style={styles.quoteNumber}>
-                  {currentIndex + 1} of {quotesToShow.length}
+                  {currentIndex + 1} of {stableLength}
                 </Text>
               </View>
               <Text style={styles.quoteText}>
@@ -367,6 +487,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  actionButtonEnhanced: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+    minHeight: 48, // Increase touch target size
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -376,6 +504,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '500',
     color: 'white',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  subLoadingText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
   },
   header: {
