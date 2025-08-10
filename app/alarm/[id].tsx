@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform, StatusBar, Switch } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform, StatusBar, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PanGestureHandler } from 'react-native-gesture-handler';
@@ -44,6 +44,13 @@ export default function AlarmScreen() {
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
   const pulseScale = useSharedValue(1);
+  
+  // For background cards fade effect
+  const swipeProgress = useSharedValue(0);
+  
+  // For flowing gradient effect inside quote cards
+  const gradientFlow = useSharedValue(0);
+  const gradientIntensity = useSharedValue(0);
 
   const alarm = alarms.find(a => a.id === id);
 
@@ -128,6 +135,20 @@ export default function AlarmScreen() {
       -1,
       true
     );
+    
+    // Flowing gradient animation - creates a mesmerizing fluid effect
+    gradientFlow.value = withRepeat(
+      withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+    
+    // Gradient intensity animation - makes the flow more dynamic
+    gradientIntensity.value = withRepeat(
+      withTiming(1, { duration: 4000, easing: Easing.bezier(0.4, 0, 0.6, 1) }),
+      -1,
+      true
+    );
   }, [quotesRef.current.length]);
 
   const onSwipeComplete = async () => {
@@ -170,6 +191,7 @@ export default function AlarmScreen() {
       translateX.value = 0;
       opacity.value = withTiming(1, { duration: 300 });
       scale.value = withTiming(1, { duration: 300 });
+      swipeProgress.value = withTiming(0, { duration: 300 });
     }
   };
 
@@ -192,6 +214,9 @@ export default function AlarmScreen() {
       const progress = Math.abs(event.translationX) / SWIPE_THRESHOLD;
       opacity.value = interpolate(progress, [0, 1], [1, 0.3], 'clamp');
       scale.value = interpolate(progress, [0, 1], [1, 0.8], 'clamp');
+      
+      // Track swipe progress for background cards animation
+      swipeProgress.value = progress;
     },
     onEnd: (event) => {
       // Don't allow gesture if already in process of stopping
@@ -214,6 +239,7 @@ export default function AlarmScreen() {
         translateX.value = withSpring(0);
         opacity.value = withSpring(1);
         scale.value = withSpring(1);
+        swipeProgress.value = withSpring(0);
       }
     },
   });
@@ -229,6 +255,76 @@ export default function AlarmScreen() {
   const pulseAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
   }));
+
+  // Create fixed animated styles for background cards (max 3 background cards)
+  const backgroundCard0AnimatedStyle = useAnimatedStyle(() => {
+    const baseOpacity = 0.1;
+    const swipeInfluence = swipeProgress.value * 0.6;
+    return {
+      opacity: Math.min(1, baseOpacity + swipeInfluence),
+    };
+  });
+
+  const backgroundCard1AnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: 0.6, // Static opacity for second background card
+    };
+  });
+
+  const backgroundCard2AnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: 0.8, // Static opacity for third background card
+    };
+  });
+
+  // Flowing gradient animated style for quote cards
+  const flowingGradientStyle = useAnimatedStyle(() => {
+    'worklet';
+    
+    // Create flowing effect by interpolating opacity and positions
+    const flowOpacity = interpolate(
+      gradientFlow.value,
+      [0, 0.5, 1],
+      [0.3, 0.7, 0.3],
+      'clamp'
+    );
+    
+    // Create intensity variation for more dynamic effect
+    const intensity = interpolate(
+      gradientIntensity.value,
+      [0, 1],
+      [0.5, 1],
+      'clamp'
+    );
+    
+    return {
+      opacity: flowOpacity * intensity,
+    };
+  });
+
+  // Second flowing layer with different timing
+  const flowingGradientStyle2 = useAnimatedStyle(() => {
+    'worklet';
+    
+    const flowOpacity = interpolate(
+      gradientIntensity.value,
+      [0, 0.5, 1],
+      [0.2, 0.5, 0.2],
+      'clamp'
+    );
+    
+    const scaleEffect = interpolate(
+      gradientFlow.value,
+      [0, 1],
+      [1, 1.1],
+      'clamp'
+    );
+    
+    return {
+      opacity: flowOpacity,
+      transform: [{ scale: scaleEffect }],
+    };
+  });
 
   // Show loading screen if explicitly loading or if we're missing essential data
   if (isLoading || !alarm || !quotes.length || quotesRef.current.length === 0) {
@@ -253,107 +349,142 @@ export default function AlarmScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Dynamic Background */}
+      {/* Gradient Background - App Consistent Colors */}
       <LinearGradient 
-        colors={currentQuote.gradientColors as any || ['#667eea', '#764ba2']} 
+        colors={['#1a1a1a', '#010101']} // Header color transitioning to app background
         style={StyleSheet.absoluteFillObject}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
       />
+      {/* Remove overlay since gradient provides consistent app colors */}
+      {/* <View style={styles.translucentOverlay} /> */}
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Animated.View style={[styles.alarmInfo, pulseAnimatedStyle]}>
-          <View style={styles.alarmRow}>
-            <Text style={[styles.alarmTime, { color: alarm.enabled ? 'white' : 'rgba(255, 255, 255, 0.5)' }]}>
-              {alarm.time}
-            </Text>
-            <View style={styles.switchContainer}>
-              <Switch
-                value={alarm.enabled}
-                onValueChange={toggleAlarm}
-                trackColor={{ 
-                  false: 'rgba(255, 255, 255, 0.3)', 
-                  true: theme.colors.gradient.primary[0] 
-                }}
-                thumbColor="white"
-                ios_backgroundColor="rgba(255, 255, 255, 0.3)"
-                style={styles.switch}
-              />
-            </View>
-          </View>
-        </Animated.View>
-        
-        <View style={styles.progressInfo}>
-          <Text style={styles.remainingText}>
-            {remaining} quote{remaining !== 1 ? 's' : ''} remaining
-          </Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
-          </View>
-        </View>
-      </View>
-
-      {/* Quote Cards Stack */}
-      <View style={styles.cardsContainer}>
-        {/* Background cards (stack effect) */}
-        {quotesRef.current.slice(currentIndex + 1, currentIndex + 4).map((quote: Quote, index: number) => (
-          <Animated.View
-            key={`bg-${currentIndex + index + 1}`}
-            style={[
-              styles.backgroundCard,
-              {
-                transform: [
-                  { scale: 0.95 - (index * 0.03) },
-                  { translateY: -15 - (index * 8) }
-                ],
-                opacity: 0.8 - (index * 0.25),
-                zIndex: 3 - index
+      {/* Main Content Layout */}
+      <View style={styles.contentWrapper}>
+        {/* Time without box */}
+        <Text style={styles.alarmTime}>{alarm.time}</Text>
+        {/* Alarm label if present */}
+        {alarm.name ? (
+          <Text style={styles.alarmLabel}>{alarm.name}</Text>
+        ) : null}
+        {/* Quote Cards Stack */}
+        <View style={styles.cardsContainer}>
+          {/* Background cards (stack effect) */}
+          {quotesRef.current.slice(currentIndex + 1, currentIndex + 4).map((quote: Quote, index: number) => {
+            // Select the appropriate animated style based on card position
+            const getBackgroundCardStyle = () => {
+              switch (index) {
+                case 0: return backgroundCard0AnimatedStyle;
+                case 1: return backgroundCard1AnimatedStyle;
+                case 2: return backgroundCard2AnimatedStyle;
+                default: return { opacity: 0.4 };
               }
-            ]}
-          >
-            <LinearGradient 
-              colors={quote.gradientColors as any || ['#667eea', '#764ba2']} 
-              style={[StyleSheet.absoluteFillObject, { borderRadius: 25 }]}
-            />
-          </Animated.View>
-        ))}
-        
-        {/* Current card */}
-        <PanGestureHandler onGestureEvent={gestureHandler}>
-          <Animated.View style={[styles.quoteCard, cardAnimatedStyle, { zIndex: 10 }]}>
-            <LinearGradient 
-              colors={['rgba(255,255,255,0.98)', 'rgba(255,255,255,0.95)', 'rgba(250,250,250,0.9)']} 
-              style={[StyleSheet.absoluteFillObject, { borderRadius: 25 }]}
-            />
-            <View style={styles.quoteContent}>
-              <View style={styles.quoteHeader}>
-                <Text style={styles.quoteNumber}>
-                  {currentIndex + 1} of {quotesRef.current.length}
+            };
+            
+            return (
+              <Animated.View
+                key={`bg-${currentIndex + index + 1}`}
+                style={[
+                  styles.backgroundCard,
+                  {
+                    transform: [
+                      { scale: 0.95 - (index * 0.03) },
+                      { translateY: -15 - (index * 8) }
+                    ],
+                    zIndex: 3 - index
+                  },
+                  getBackgroundCardStyle()
+                ]}
+              >
+                <LinearGradient 
+                  colors={quote.gradientColors as any || ['#667eea', '#764ba2']} 
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: 25 }]}
+                />
+                
+                {/* Subtle flowing effect for background cards too */}
+                <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: 0.3 }]}>
+                  <LinearGradient 
+                    colors={[
+                      'transparent',
+                      `${(quote.gradientColors as any)?.[0] || '#667eea'}30`,
+                      'transparent',
+                    ]} 
+                    style={[StyleSheet.absoluteFillObject, { borderRadius: 25 }]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                  />
+                </Animated.View>
+              </Animated.View>
+            );
+          })}
+          {/* Current card */}
+          <PanGestureHandler onGestureEvent={gestureHandler}>
+            <Animated.View style={[styles.quoteCard, cardAnimatedStyle, { zIndex: 10 }]}> 
+              {/* Base gradient */}
+              <LinearGradient 
+                colors={currentQuote.gradientColors as any || ['#667eea', '#764ba2']} 
+                style={[StyleSheet.absoluteFillObject, { borderRadius: 25 }]}
+              />
+              
+              {/* Flowing gradient overlay for mesmerizing effect */}
+              <Animated.View style={[StyleSheet.absoluteFillObject, flowingGradientStyle]}>
+                <LinearGradient 
+                  colors={[
+                    `${(currentQuote.gradientColors as any)?.[0] || '#667eea'}40`, // 25% opacity
+                    `${(currentQuote.gradientColors as any)?.[1] || '#764ba2'}60`, // 37% opacity
+                    `${(currentQuote.gradientColors as any)?.[0] || '#667eea'}40`, // 25% opacity
+                  ]} 
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: 25 }]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                />
+              </Animated.View>
+              
+              {/* Another flowing layer with different timing */}
+              <Animated.View style={[StyleSheet.absoluteFillObject, flowingGradientStyle2]}>
+                <LinearGradient 
+                  colors={[
+                    'transparent',
+                    `${(currentQuote.gradientColors as any)?.[1] || '#764ba2'}40`,
+                    'transparent',
+                  ]} 
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: 25 }]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                />
+              </Animated.View>
+              <View style={styles.quoteContent}>
+                <View style={styles.quoteHeader}>
+                  <Text style={styles.quoteNumber}>
+                    {currentIndex + 1} of {quotesRef.current.length}
+                  </Text>
+                </View>
+                <Text style={styles.quoteText}>
+                  "{currentQuote.text}"
                 </Text>
+                {currentQuote.author && (
+                  <Text style={styles.quoteAuthor}>
+                    — {currentQuote.author}
+                  </Text>
+                )}
+                <View style={styles.swipeHint}>
+                  <Text style={styles.swipeHintText}>← Swipe to continue →</Text>
+                </View>
               </View>
-              <Text style={styles.quoteText}>
-                &ldquo;{currentQuote.text}&rdquo;
-              </Text>
-              {currentQuote.author && (
-                <Text style={styles.quoteAuthor}>
-                  — {currentQuote.author}
-                </Text>
-              )}
-              <View style={styles.swipeHint}>
-                <Text style={styles.swipeHintText}>← Swipe to continue →</Text>
-              </View>
-            </View>
-          </Animated.View>
-        </PanGestureHandler>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.instructionText}>
-          Swipe left or right to continue
-        </Text>
-        <Text style={styles.subText}>
-          Read each quote to dismiss the alarm
-        </Text>
+            </Animated.View>
+          </PanGestureHandler>
+        </View>
+        {/* Quick Dismiss Button at the bottom */}
+        <TouchableOpacity 
+          style={styles.quickDismissButton}
+          onPress={async () => {
+            setAlarmStopped(true);
+            await stopAlarm(id as string);
+            router.replace('/');
+          }}
+        >
+          <Text style={styles.quickDismissText}>Quick Dismiss</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -363,10 +494,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  translucentOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#010101', // Full opacity with #010101 color
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#1a1a1a',
   },
   loadingText: {
     fontSize: 18,
@@ -398,15 +534,115 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
-  alarmTime: {
-    fontSize: 40,
-    fontWeight: '300',
-    textAlign: 'center',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+  timeContainer: {
+    alignItems: 'center',
     flex: 1,
+  },
+  alarmTime: {
+    fontSize: 90,
+    fontFamily: 'Inter-Medium',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: 0,
+    marginTop: -40,
+    marginBottom: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  alarmLabel: {
+    fontSize: 19,
+    fontWeight: '500',
+    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: -5,
+    marginBottom: 8,
+    letterSpacing: 0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 90 : 70,
+    paddingBottom: 40,
+  },
+  timeBox: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 24,
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.3)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+  },
+  quoteCounter: {
+    fontSize: 17,
+    color: 'rgba(255,255,255,0.9)',
+    marginVertical: 20,
+    fontWeight: '500',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  quickDismissButton: {
+    marginTop: 32,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 28,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    shadowColor: 'rgba(0, 0, 0, 0.4)',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  quickDismissText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  dismissButtonContainer: {
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  dismissButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 22,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(20px)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+  },
+  dismissButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'white',
+    letterSpacing: 0.5,
   },
   switchContainer: {
     marginLeft: 20,
@@ -426,13 +662,6 @@ const styles = StyleSheet.create({
   },
   progressInfo: {
     alignItems: 'center',
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   remainingText: {
     fontSize: 13,
@@ -483,54 +712,67 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 25,
-    paddingVertical: 40,
+    paddingHorizontal: 32,
+    paddingVertical: 48,
   },
   quoteHeader: {
     position: 'absolute',
-    top: 25,
-    right: 25,
+    top: 28,
+    right: 28,
   },
   quoteNumber: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#555',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 25,
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
     overflow: 'hidden',
-    letterSpacing: 0.2,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   quoteText: {
-    fontSize: 22,
-    fontWeight: '300',
-    color: '#2a2a2a',
-    lineHeight: 32,
+    fontSize: 28,
+    fontWeight: '500',
+    color: 'white',
+    lineHeight: 40,
     textAlign: 'center',
-    marginBottom: 20,
-    marginTop: 12,
-    letterSpacing: 0.2,
+    marginBottom: 24,
+    marginTop: 16,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   quoteAuthor: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: '#666',
+    fontSize: 18,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
     fontStyle: 'italic',
-    letterSpacing: 0.1,
+    letterSpacing: 0.5,
+    marginTop: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   swipeHint: {
     position: 'absolute',
-    bottom: 25,
+    bottom: 32,
     alignSelf: 'center',
   },
   swipeHintText: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: '#888',
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   footer: {
     paddingHorizontal: 20,
