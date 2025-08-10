@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Clock } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStorage } from '@/hooks/useStorage';
-import { useAlarmManager } from '@/hooks/useAlarmManager';
+import { alarmService } from '@/services/AlarmService';
 import { AlarmCard } from '@/components/AlarmCard';
 import { AlarmInsightCard } from '@/components/AlarmInsightCard';
 import AddAlarmModal from '@/components/AddAlarmModal';
@@ -13,8 +13,12 @@ import { theme, commonStyles } from '@/constants/theme';
 
 export default function AlarmsScreen() {
   const { alarms, settings, saveAlarms, loaded } = useStorage();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { stopAlarm } = useAlarmManager(alarms, settings.soundEnabled, settings.vibrationEnabled);
+  
+  // 🚀 PROFESSIONAL: Use alarm service directly (no hook recreation)
+  const stopAlarm = async (alarmId: string) => {
+    await alarmService.stopAlarm(alarmId);
+  };
+  
   const [showAddModal, setShowAddModal] = useState(false);
   
   // Scroll enhancement states
@@ -68,6 +72,13 @@ export default function AlarmsScreen() {
       alarm.id === alarmId ? { ...alarm, enabled: !alarm.enabled } : alarm
     );
     saveAlarms(updatedAlarms);
+    console.log('🔄 Toggled alarm, updating service immediately');
+    // Update the alarm service immediately
+    alarmService.startChecking(
+      updatedAlarms,
+      settings.soundEnabled ?? true,
+      settings.vibrationEnabled ?? true
+    );
   };
 
   const deleteAlarm = (alarmId: string) => {
@@ -82,6 +93,17 @@ export default function AlarmsScreen() {
           onPress: () => {
             const updatedAlarms = alarms.filter(alarm => alarm.id !== alarmId);
             saveAlarms(updatedAlarms);
+            console.log('🗑️ Deleted alarm, updating service immediately');
+            // Update the alarm service immediately
+            if (updatedAlarms.length > 0) {
+              alarmService.startChecking(
+                updatedAlarms,
+                settings.soundEnabled ?? true,
+                settings.vibrationEnabled ?? true
+              );
+            } else {
+              alarmService.stopChecking();
+            }
           },
         },
       ]
@@ -190,7 +212,15 @@ export default function AlarmsScreen() {
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={(newAlarm: any) => {
-          saveAlarms([...alarms, newAlarm]);
+          const updatedAlarms = [...alarms, newAlarm];
+          saveAlarms(updatedAlarms);
+          console.log('💾 Saved new alarm, updating service immediately');
+          // Update the alarm service immediately with the new alarm
+          alarmService.startChecking(
+            updatedAlarms,
+            settings.soundEnabled ?? true,
+            settings.vibrationEnabled ?? true
+          );
           setShowAddModal(false);
         }}
       />
