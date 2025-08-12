@@ -16,6 +16,7 @@ export default function QuotesScreen() {
   // Scroll enhancement states
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false); // Track if user has scrolled
 
   // Handle scroll events for progress and end detection
   const handleScroll = (event: any) => {
@@ -23,6 +24,9 @@ export default function QuotesScreen() {
     const scrollPosition = contentOffset.y;
     const contentHeight = contentSize.height;
     const screenHeight = layoutMeasurement.height;
+    
+    // Track if scrolled for header background
+    setIsScrolled(scrollPosition > 0);
     
     // Calculate scroll progress (0 to 1)
     const maxScroll = contentHeight - screenHeight;
@@ -32,6 +36,9 @@ export default function QuotesScreen() {
     // Check if near bottom (within 50px)
     const isNearBottom = scrollPosition + screenHeight >= contentHeight - 50;
     setIsAtBottom(isNearBottom);
+    
+    // Track if user has scrolled (even a little)
+    setIsScrolled(scrollPosition > 0);
   };
 
   // Set status bar for quotes page
@@ -43,6 +50,14 @@ export default function QuotesScreen() {
       StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
     }
   }, []);
+
+  // Update status bar color based on scroll state
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const statusBarColor = isScrolled ? theme.colors.statusBarBackground : theme.colors.background;
+      StatusBar.setBackgroundColor(statusBarColor, true);
+    }
+  }, [isScrolled]);
 
   // Also set status bar when page is focused
   useFocusEffect(
@@ -90,8 +105,14 @@ export default function QuotesScreen() {
         backgroundColor={Platform.OS === 'android' ? theme.colors.statusBarBackground : undefined} 
         translucent={true} 
       />
-      <View style={styles.headerContainer}>
-        <SafeAreaView style={styles.headerSafeArea}>
+      <View style={[
+        styles.headerContainer, 
+        { backgroundColor: isScrolled ? theme.colors.headerBackground : theme.colors.background }
+      ]}>
+        <SafeAreaView style={[
+          styles.headerSafeArea,
+          { backgroundColor: isScrolled ? theme.colors.headerBackground : theme.colors.background }
+        ]}>
           <View style={styles.header}>
             <Text style={styles.title}>Quotes</Text>
             <TouchableOpacity

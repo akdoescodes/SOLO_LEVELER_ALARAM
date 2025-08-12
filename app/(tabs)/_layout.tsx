@@ -43,9 +43,9 @@ function GradientLabel({ label, focused }: { label: string, focused: boolean }) 
         numberOfLines={1}
         style={{
           fontFamily: theme.typography.fontFamily.medium,
-          fontSize: 10,
+          fontSize: 11, // 5% increase: 10.5 × 1.05 ≈ 11px
           color: theme.colors.text.secondary,
-          marginTop: 2,
+          marginTop: 4, // Increased from 2px to 4px for more space below icons
           textAlign: 'center',
         }}>
         {label}
@@ -57,8 +57,8 @@ function GradientLabel({ label, focused }: { label: string, focused: boolean }) 
     <View style={{ alignItems: 'center' }}>
       <GradientText style={{
         fontFamily: theme.typography.fontFamily.medium,
-        fontSize: 10,
-        marginTop: 2,
+        fontSize: 11, // 5% increase: 10.5 × 1.05 ≈ 11px
+        marginTop: 4, // Increased from 2px to 4px for more space below icons
         textAlign: 'center',
       }}>
         {label}
@@ -89,8 +89,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Alarms',        tabBarIcon: ({ size, focused }) => (
-          <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 60, paddingTop: 2 }}>
-            <GradientIcon IconComponent={Clock} size={size} focused={focused} />
+          <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 60, paddingTop: 11 }}>
+            <GradientIcon IconComponent={Clock} size={Math.round(size * 1.05)} focused={focused} />
             <GradientLabel label="Alarms" focused={focused} />
           </View>
         ),
@@ -100,8 +100,8 @@ export default function TabLayout() {
         name="quotes"
         options={{
           title: 'Quotes',        tabBarIcon: ({ size, focused }) => (
-          <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 60, paddingTop: 2 }}>
-            <GradientIcon IconComponent={Quote} size={size} focused={focused} />
+          <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 60, paddingTop: 11 }}>
+            <GradientIcon IconComponent={Quote} size={Math.round(size * 1.05)} focused={focused} />
             <GradientLabel label="Quotes" focused={focused} />
           </View>
         ),
@@ -111,8 +111,8 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',        tabBarIcon: ({ size, focused }) => (
-          <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 60, paddingTop: 2 }}>
-            <GradientIcon IconComponent={Settings} size={size} focused={focused} />
+          <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 60, paddingTop: 11 }}>
+            <GradientIcon IconComponent={Settings} size={Math.round(size * 1.05)} focused={focused} />
             <GradientLabel label="Settings" focused={focused} />
           </View>
         ),
@@ -128,9 +128,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 85,
-    paddingBottom: 28,
-    paddingTop: 8,
+    height: 92, // 10% decrease: 102 × 0.9 = 91.8 ≈ 92px
+    paddingBottom: 31, // Decreased proportionally: 34 × 0.9 ≈ 31px
+    paddingTop: 9, // Decreased proportionally: 10 × 0.9 = 9px
     borderTopWidth: 0,
     elevation: 0,
     backgroundColor: theme.colors.headerBackground, // Same color as header

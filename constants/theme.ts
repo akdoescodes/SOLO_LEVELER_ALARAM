@@ -54,10 +54,10 @@ export const theme = {
   
   // Border radius
   borderRadius: {
-    sm: 4,
-    md: 8,
-    lg: 12,
-    xl: 16,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
     full: 999,
   },
   
@@ -133,6 +133,14 @@ export const commonStyles = {
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
     borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.surface.primary,
+  },
+  
+  // Settings card with smaller radius
+  settingsCard: {
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+    borderRadius: 12, // 12px - proportionally smaller than main 16px
     backgroundColor: theme.colors.surface.primary,
   },
   

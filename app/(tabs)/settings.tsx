@@ -15,6 +15,7 @@ export default function SettingsScreen() {
   // Scroll enhancement states
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Handle scroll events for progress and end detection
   const handleScroll = (event: any) => {
@@ -22,6 +23,9 @@ export default function SettingsScreen() {
     const scrollPosition = contentOffset.y;
     const contentHeight = contentSize.height;
     const screenHeight = layoutMeasurement.height;
+    
+    // Track if scrolled for header background
+    setIsScrolled(scrollPosition > 0);
     
     // Calculate scroll progress (0 to 1)
     const maxScroll = contentHeight - screenHeight;
@@ -42,6 +46,16 @@ export default function SettingsScreen() {
       StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
     }
   }, []);
+
+  // Update status bar based on scroll state
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(
+        isScrolled ? theme.colors.headerBackground : theme.colors.statusBarBackground,
+        true
+      );
+    }
+  }, [isScrolled]);
 
   // Also set status bar when page is focused
   useFocusEffect(
@@ -75,8 +89,14 @@ export default function SettingsScreen() {
         backgroundColor={Platform.OS === 'android' ? theme.colors.statusBarBackground : undefined} 
         translucent={true} 
       />
-      <View style={styles.headerContainer}>
-        <SafeAreaView style={styles.headerSafeArea}>
+      <View style={[
+        styles.headerContainer, 
+        { backgroundColor: isScrolled ? theme.colors.headerBackground : theme.colors.background }
+      ]}>
+        <SafeAreaView style={[
+          styles.headerSafeArea,
+          { backgroundColor: isScrolled ? theme.colors.headerBackground : theme.colors.background }
+        ]}>
           <View style={styles.header}>
             <Text style={styles.title}>Settings</Text>
           </View>
@@ -97,7 +117,7 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Alarm Settings</Text>
             
-            <View style={[styles.settingCard, commonStyles.glassCard]}>
+            <View style={[styles.settingCard, commonStyles.settingsCard]}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
                   <IconWithLabel icon={Volume2} size={20}>
@@ -119,7 +139,7 @@ export default function SettingsScreen() {
               </View>
             </View>
 
-            <View style={[styles.settingCard, commonStyles.glassCard]}>
+            <View style={[styles.settingCard, commonStyles.settingsCard]}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
                   <IconWithLabel icon={Vibrate} size={20}>
@@ -145,7 +165,7 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quote Settings</Text>
             
-            <View style={[styles.settingCard, commonStyles.glassCard]}>
+            <View style={[styles.settingCard, commonStyles.settingsCard]}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
                   <IconWithLabel icon={Clock} size={20}>

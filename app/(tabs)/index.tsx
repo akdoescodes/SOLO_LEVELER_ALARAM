@@ -25,6 +25,7 @@ export default function AlarmsScreen() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(false);
   const [showEndIndicator, setShowEndIndicator] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false); // Track if user has scrolled
 
   // Handle scroll events for progress and end detection
   const handleScroll = (event: any) => {
@@ -44,6 +45,9 @@ export default function AlarmsScreen() {
     
     // Show end indicator when scrolled past 80% and there's content to scroll
     setShowEndIndicator(progress > 0.8 && maxScroll > 100);
+    
+    // Track if user has scrolled (even a little)
+    setIsScrolled(scrollPosition > 0);
   };
 
   // Set status bar for alarms page
@@ -55,6 +59,14 @@ export default function AlarmsScreen() {
       StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
     }
   }, []);
+
+  // Update status bar color based on scroll state
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const statusBarColor = isScrolled ? theme.colors.statusBarBackground : theme.colors.background;
+      StatusBar.setBackgroundColor(statusBarColor, true);
+    }
+  }, [isScrolled]);
 
   // Also set status bar when page is focused
   useFocusEffect(
@@ -127,23 +139,17 @@ export default function AlarmsScreen() {
         backgroundColor={Platform.OS === 'android' ? theme.colors.statusBarBackground : undefined} 
         translucent={true} 
       />
-      <View style={styles.headerContainer}>
-        <SafeAreaView style={styles.headerSafeArea}>
+      <View style={[
+        styles.headerContainer, 
+        { backgroundColor: isScrolled ? theme.colors.headerBackground : theme.colors.background }
+      ]}>
+        <SafeAreaView style={[
+          styles.headerSafeArea,
+          { backgroundColor: isScrolled ? theme.colors.headerBackground : theme.colors.background }
+        ]}>
           <View style={styles.header}>
             <Text style={styles.title}>Alarms</Text>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setShowAddModal(true)}
-            >
-              <LinearGradient
-                colors={theme.colors.gradient.primary}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.addButtonGradient}
-              >
-                <Plus size={24} color={theme.colors.text.primary} />
-              </LinearGradient>
-            </TouchableOpacity>
+            <View style={styles.headerPlaceholder} />
           </View>
         </SafeAreaView>
       </View>
@@ -224,6 +230,21 @@ export default function AlarmsScreen() {
           setShowAddModal(false);
         }}
       />
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.floatingActionButton}
+        onPress={() => setShowAddModal(true)}
+      >
+        <LinearGradient
+          colors={theme.colors.gradient.primary}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.floatingActionButtonGradient}
+        >
+          <Plus size={32} color={theme.colors.text.primary} strokeWidth={1.2} />
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -233,10 +254,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    backgroundColor: theme.colors.headerBackground,
+    // Removed static backgroundColor - will be set dynamically
   },
   headerSafeArea: {
-    backgroundColor: theme.colors.headerBackground,
+    // Removed static backgroundColor - will be set dynamically  
   },
   contentContainer: {
     flex: 1,
@@ -247,16 +268,38 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Back to space-between for title positioning
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: 2, // Made much smaller - about 15% of previous value (16px -> 2px)
-    backgroundColor: 'transparent', // Remove background since parent handles it
+    paddingVertical: 2,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: theme.typography.fontSize['3xl'], // Back to 3xl (30px)
     fontFamily: theme.typography.fontFamily.medium, // Keep medium (less bold)
     color: theme.colors.text.primary,
+  },
+  headerPlaceholder: {
+    width: 40, // Same width as original add button for layout balance
+    height: 40,
+  },
+  floatingActionButton: {
+    position: 'absolute',
+    bottom: 110, // Adjusted for shorter nav bar: 120 - 10px (nav height decrease) = 110px
+    alignSelf: 'center',
+    width: 87, // 10% smaller: 97 × 0.9 = 87.3 ≈ 87px
+    height: 87, // 10% smaller: 97 × 0.9 = 87.3 ≈ 87px
+    borderRadius: 43.5, // Half of 87px for perfect circle
+    ...theme.shadows.md,
+    elevation: 8, // Higher elevation for floating effect
+    zIndex: 999, // Ensure it's above other elements
+  },
+  floatingActionButtonGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 43.5, // Half of 87px for perfect circle
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addButton: {
     width: 40,
