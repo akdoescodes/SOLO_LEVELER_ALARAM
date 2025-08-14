@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +11,9 @@ import { IconWithLabel } from '@/components/IconWithLabel';
 
 export default function SettingsScreen() {
   const { settings, saveSettings, loaded } = useStorage();
+
+  // ScrollView ref for resetting scroll position
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Scroll enhancement states
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -57,7 +60,7 @@ export default function SettingsScreen() {
     }
   }, [isScrolled]);
 
-  // Also set status bar when page is focused
+  // Also set status bar when page is focused and reset scroll position
   useFocusEffect(
     React.useCallback(() => {
       StatusBar.setBarStyle('light-content', true);
@@ -65,6 +68,16 @@ export default function SettingsScreen() {
       if (Platform.OS === 'android') {
         StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
       }
+      
+      // Reset scroll position to top when page is focused
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+      }
+      
+      // Reset scroll states
+      setScrollProgress(0);
+      setIsAtBottom(false);
+      setIsScrolled(false);
     }, [])
   );
 
@@ -105,6 +118,7 @@ export default function SettingsScreen() {
       
       <View style={styles.contentContainer}>
         <ScrollView 
+          ref={scrollViewRef}
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={true}

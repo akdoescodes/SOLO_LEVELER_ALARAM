@@ -41,7 +41,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
               {getDaysText()}
             </GradientText>
           ) : (
-            <Text style={styles.days}>
+            <Text style={[styles.days, { color: theme.colors.text.secondary }]}>
               {getDaysText()}
             </Text>
           )}
@@ -76,7 +76,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                       {dayAbbr}
                     </GradientText>
                   ) : (
-                    <Text style={[styles.dayText, { color: theme.colors.text.primary }]}>
+                    <Text style={[styles.dayText, { color: theme.colors.text.secondary }]}>
                       {dayAbbr}
                     </Text>
                   )
@@ -112,14 +112,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
     <>
       <View style={styles.container}>
         <View style={[styles.card, commonStyles.glassCard]}>
-          {alarm.enabled && (
-            <LinearGradient
-              colors={theme.colors.gradient.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.gradientOverlay}
-            />
-          )}
+          {/* Removed gradient overlay */}
           <View style={styles.content}>
             <View style={styles.leftContent}>
               <Text style={[styles.time, { color: alarm.enabled ? theme.colors.text.primary : 'rgba(255, 255, 255, 0.5)' }]}>
@@ -136,9 +129,9 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                 onValueChange={onToggle}
                 trackColor={{ 
                   false: 'rgba(255, 255, 255, 0.15)', 
-                  true: theme.colors.gradient.primary[1] // Blue color when on
+                  true: theme.colors.gradient.primary[0] // Green color when on
                 }}
-                thumbColor={alarm.enabled ? theme.colors.gradient.primary[0] : "rgba(255, 255, 255, 0.9)"} // Green thumb when on
+                thumbColor={alarm.enabled ? theme.colors.text.primary : "rgba(255, 255, 255, 0.9)"} // White thumb
                 ios_backgroundColor="rgba(255, 255, 255, 0.15)"
                 style={styles.switch}
               />
@@ -147,11 +140,7 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
                   style={styles.menuButton} 
                   onPress={handleMenuPress}
                 >
-                  {alarm.enabled ? (
-                    <GradientIcon icon={MoreVertical} size={20} />
-                  ) : (
-                    <MoreVertical size={20} color={theme.colors.text.secondary} />
-                  )}
+                  <MoreVertical size={20} color={alarm.enabled ? theme.colors.text.primary : theme.colors.text.secondary} />
                 </TouchableOpacity>
               </View>
             </View>

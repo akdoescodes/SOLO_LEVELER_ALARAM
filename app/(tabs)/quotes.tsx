@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,9 @@ import { theme, commonStyles } from '@/constants/theme';
 export default function QuotesScreen() {
   const { quotes, saveQuotes, loaded } = useStorage();
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // ScrollView ref for resetting scroll position
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Scroll enhancement states
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -59,7 +62,7 @@ export default function QuotesScreen() {
     }
   }, [isScrolled]);
 
-  // Also set status bar when page is focused
+  // Also set status bar when page is focused and reset scroll position
   useFocusEffect(
     React.useCallback(() => {
       StatusBar.setBarStyle('light-content', true);
@@ -67,6 +70,16 @@ export default function QuotesScreen() {
       if (Platform.OS === 'android') {
         StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
       }
+      
+      // Reset scroll position to top when page is focused
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+      }
+      
+      // Reset scroll states
+      setScrollProgress(0);
+      setIsAtBottom(false);
+      setIsScrolled(false);
     }, [])
   );
 
@@ -134,6 +147,7 @@ export default function QuotesScreen() {
     
     <View style={styles.contentContainer}>
       <ScrollView 
+        ref={scrollViewRef}
         style={styles.scrollView} 
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={true}

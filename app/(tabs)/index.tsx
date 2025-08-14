@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +13,9 @@ import { theme, commonStyles } from '@/constants/theme';
 
 export default function AlarmsScreen() {
   const { alarms, settings, saveAlarms, loaded } = useStorage();
+  
+  // ScrollView ref for resetting scroll position
+  const scrollViewRef = useRef<ScrollView>(null);
   
   // 🚀 PROFESSIONAL: Use alarm service directly (no hook recreation)
   const stopAlarm = async (alarmId: string) => {
@@ -68,7 +71,7 @@ export default function AlarmsScreen() {
     }
   }, [isScrolled]);
 
-  // Also set status bar when page is focused
+  // Also set status bar when page is focused and reset scroll position
   useFocusEffect(
     React.useCallback(() => {
       StatusBar.setBarStyle('light-content', true);
@@ -76,6 +79,17 @@ export default function AlarmsScreen() {
       if (Platform.OS === 'android') {
         StatusBar.setBackgroundColor(theme.colors.statusBarBackground, true);
       }
+      
+      // Reset scroll position to top when page is focused
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+      }
+      
+      // Reset scroll states
+      setScrollProgress(0);
+      setIsAtBottom(false);
+      setShowEndIndicator(false);
+      setIsScrolled(false);
     }, [])
   );
 
@@ -156,6 +170,7 @@ export default function AlarmsScreen() {
       
       <View style={styles.contentContainer}>
         <ScrollView 
+          ref={scrollViewRef}
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={true}
@@ -285,11 +300,11 @@ const styles = StyleSheet.create({
   },
   floatingActionButton: {
     position: 'absolute',
-    bottom: 110, // Adjusted for shorter nav bar: 120 - 10px (nav height decrease) = 110px
-    alignSelf: 'center',
-    width: 87, // 10% smaller: 97 × 0.9 = 87.3 ≈ 87px
-    height: 87, // 10% smaller: 97 × 0.9 = 87.3 ≈ 87px
-    borderRadius: 43.5, // Half of 87px for perfect circle
+    bottom: 115, // 110px distance from navigation bar
+    right: 20, // Keep at bottom right
+    width: 70, // 70px diameter
+    height: 70, // 70px diameter
+    borderRadius: 35, // Half of 70px for perfect circle
     ...theme.shadows.md,
     elevation: 8, // Higher elevation for floating effect
     zIndex: 999, // Ensure it's above other elements
@@ -297,7 +312,7 @@ const styles = StyleSheet.create({
   floatingActionButtonGradient: {
     width: '100%',
     height: '100%',
-    borderRadius: 43.5, // Half of 87px for perfect circle
+    borderRadius: 35, // Half of 70px for perfect circle
     justifyContent: 'center',
     alignItems: 'center',
   },
