@@ -91,20 +91,47 @@ export class AlarmService {
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const currentTimestamp = now.getTime();
     
-    // Skip if we already triggered an alarm for this time
+    // Skip if we already triggered an alarm for this time (but not for snoozed alarms)
     if (currentTime === this.lastTriggeredTime) {
+      // Check for snoozed alarms that should trigger now
+      const snoozedAlarm = this.currentAlarms.find(alarm => 
+        alarm.enabled && 
+        alarm.isSnoozed &&
+        alarm.snoozeTimestamp &&
+        currentTimestamp >= alarm.snoozeTimestamp &&
+        currentTimestamp < alarm.snoozeTimestamp + 60000 // Within 1 minute window
+      );
+      
+      if (snoozedAlarm) {
+        console.log('🔔 Snoozed alarm should trigger:', snoozedAlarm.id);
+        this.triggerAlarm(snoozedAlarm);
+      }
       return;
     }
 
-    // Find matching alarm
+    // Find matching regular alarm
     const matchingAlarm = this.currentAlarms.find(alarm => 
       alarm.enabled && 
+      !alarm.isSnoozed && // Regular alarms only
       alarm.time === currentTime &&
       (alarm.days.length === 0 || alarm.days.includes(currentDay))
     );
 
-    if (matchingAlarm) {
+    // Check for snoozed alarms that should trigger now
+    const snoozedAlarm = this.currentAlarms.find(alarm => 
+      alarm.enabled && 
+      alarm.isSnoozed &&
+      alarm.snoozeTimestamp &&
+      currentTimestamp >= alarm.snoozeTimestamp &&
+      currentTimestamp < alarm.snoozeTimestamp + 60000 // Within 1 minute window
+    );
+
+    if (snoozedAlarm) {
+      console.log('🔔 Professional alarm service found snoozed alarm:', snoozedAlarm.id);
+      this.triggerAlarm(snoozedAlarm);
+    } else if (matchingAlarm) {
       console.log('🔔 Professional alarm service found matching alarm:', matchingAlarm.id);
       this.triggerAlarm(matchingAlarm);
     }
@@ -153,13 +180,13 @@ export class AlarmService {
   }
   
   // Stop the current alarm
-  async stopAlarm(alarmId: string) {
+  async stopAlarm(alarmId: string, options?: { isSnooze?: boolean }) {
     if (this.activeAlarmId !== alarmId) {
       console.log('⚠️ Attempted to stop non-active alarm:', alarmId);
       return;
     }
     
-    console.log('🛑 Stopping alarm:', alarmId);
+    console.log('🛑 Stopping alarm:', alarmId, options?.isSnooze ? '(snooze)' : '');
     
     // Stop sound
     if (this.audioPlayer) {
@@ -182,16 +209,110 @@ export class AlarmService {
     // Reset last triggered time after a delay to prevent immediate re-trigger
     setTimeout(() => {
       this.lastTriggeredTime = '';
-    }, 5000);
+    }, options?.isSnooze ? 1000 : 5000); // Shorter delay for snooze
     
     console.log('✅ Alarm stopped successfully');
   }
-  
+
+  // Snooze the current alarm
+  async snoozeAlarm(alarmId: string, snoozeDurationMinutes: number = 5): Promise<Alarm | null> {
+    if (this.activeAlarmId !== alarmId) {
+      console.log('⚠️ Attempted to snooze non-active alarm:', alarmId);
+      return null;
+    }
+
+    console.log('😴 Snoozing alarm:', alarmId, 'for', snoozeDurationMinutes, 'minutes');
+
+    try {
+      // Find the alarm in current alarms
+      const alarmIndex = this.currentAlarms.findIndex(a => a.id === alarmId);
+      if (alarmIndex === -1) {
+        console.log('⚠️ Could not find alarm to snooze:', alarmId);
+        return null;
+      }
+
+      const originalAlarm = this.currentAlarms[alarmIndex];
+      
+      // Calculate snooze time
+      const now = new Date();
+      const snoozeUntil = new Date(now.getTime() + snoozeDurationMinutes * 60 * 1000);
+      const snoozeTime = `${snoozeUntil.getHours().toString().padStart(2, '0')}:${snoozeUntil.getMinutes().toString().padStart(2, '0')}`;
+      
+      // Create a snoozed alarm that keeps original display time but has internal snooze logic
+      const snoozedAlarm: Alarm = {
+        ...originalAlarm,
+        // Keep original time for display purposes
+        time: originalAlarm.time,
+        // Store snooze information
+        isSnoozed: true,
+        originalTime: originalAlarm.originalTime || originalAlarm.time,
+        originalDays: originalAlarm.originalDays || originalAlarm.days,
+        snoozeDuration: snoozeDurationMinutes,
+        // Add snooze metadata for internal use
+        snoozeUntilTime: snoozeTime,
+        snoozeTimestamp: snoozeUntil.getTime(),
+      };
+
+      // Replace the alarm in our current alarms array
+      this.currentAlarms[alarmIndex] = snoozedAlarm;
+
+      // Stop the current alarm
+      await this.stopAlarm(alarmId, { isSnooze: true });
+
+      // Restart checking with updated alarms
+      this.startChecking(this.currentAlarms, this.currentSoundEnabled, this.currentVibrationEnabled);
+
+      console.log('😴 Alarm snoozed successfully until:', snoozeTime);
+      return snoozedAlarm;
+    } catch (error) {
+      console.error('Error snoozing alarm:', error);
+      return null;
+    }
+  }
+
+  // Get alarm by ID (helper method)
+  private getAlarmById(alarmId: string): Alarm | undefined {
+    return this.currentAlarms.find(alarm => alarm.id === alarmId);
+  }
+
+  // Restore alarm to original settings (after snooze period)
+  restoreOriginalAlarm(alarmId: string): Alarm | null {
+    const alarmIndex = this.currentAlarms.findIndex(a => a.id === alarmId);
+    if (alarmIndex === -1) return null;
+
+    const snoozedAlarm = this.currentAlarms[alarmIndex];
+    if (!snoozedAlarm.isSnoozed || !snoozedAlarm.originalTime) return null;
+
+    // Restore original alarm settings
+    const restoredAlarm: Alarm = {
+      ...snoozedAlarm,
+      time: snoozedAlarm.originalTime,
+      days: snoozedAlarm.originalDays || [],
+      isSnoozed: false,
+      originalTime: undefined,
+      originalDays: undefined,
+      snoozeDuration: undefined,
+      snoozeUntilTime: undefined,
+      snoozeTimestamp: undefined,
+    };
+
+    // Update in current alarms
+    this.currentAlarms[alarmIndex] = restoredAlarm;
+
+    console.log('🔄 Restored alarm to original settings:', restoredAlarm.time);
+    return restoredAlarm;
+  }
+
+  // Format time to HH:mm format (helper method)
+  private formatTime(date: Date): string {
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  }
+
   // Get current active alarm ID
   getActiveAlarmId(): string | null {
     return this.activeAlarmId;
   }
-  
+
   // Check if service is currently checking for alarms
   isCheckingActive(): boolean {
     return this.isChecking;

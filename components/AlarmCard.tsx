@@ -115,9 +115,19 @@ export function AlarmCard({ alarm, onToggle, onDelete }: AlarmCardProps) {
           {/* Removed gradient overlay */}
           <View style={styles.content}>
             <View style={styles.leftContent}>
-              <Text style={[styles.time, { color: alarm.enabled ? theme.colors.text.primary : 'rgba(255, 255, 255, 0.5)' }]}>
-                {alarm.time}
-              </Text>
+              <View style={styles.timeContainer}>
+                <Text style={[styles.time, { color: alarm.enabled ? theme.colors.text.primary : 'rgba(255, 255, 255, 0.5)' }]}>
+                  {alarm.time}
+                </Text>
+                {alarm.isSnoozed && alarm.enabled && (
+                  <View style={styles.snoozeIndicator}>
+                    <Text style={styles.snoozeText}>ZZ</Text>
+                  </View>
+                )}
+              </View>
+              {alarm.isSnoozed && alarm.enabled && alarm.snoozeUntilTime && (
+                <Text style={styles.snoozeUntilText}>until {alarm.snoozeUntilTime}</Text>
+              )}
               <View style={styles.infoRow}>
                 {renderDayIndicators()}
               </View>
@@ -188,9 +198,42 @@ const styles = StyleSheet.create({
   leftContent: {
     flex: 1,
   },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
   time: {
     fontSize: theme.typography.fontSize['3xl'],
     fontFamily: theme.typography.fontFamily.bold,
+  },
+  snoozeIndicator: {
+    backgroundColor: 'rgba(255, 165, 0, 0.15)',
+    borderRadius: 4, // Very small radius for subtle badge
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 165, 0, 0.3)',
+    alignSelf: 'flex-start',
+    marginLeft: 4,
+    minWidth: 18,
+    alignItems: 'center',
+  },
+  snoozeText: {
+    fontSize: 9,
+    fontFamily: theme.typography.fontFamily.bold,
+    color: '#FFA500',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  snoozeUntilText: {
+    fontSize: 11,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: 'rgba(255, 165, 0, 0.7)',
+    letterSpacing: 0.2,
+    marginTop: -2,
+    marginLeft: 4,
   },
   infoRow: {
     marginTop: theme.spacing.xs,

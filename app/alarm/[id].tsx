@@ -38,7 +38,10 @@ export default function AlarmScreen() {
   const quotesRef = useRef<Quote[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [alarmStopped, setAlarmStopped] = useState<boolean>(false);
+  const [isSnoozed, setIsSnoozed] = useState<boolean>(false);
+  const [snoozeUntilTime, setSnoozeUntilTime] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentTime, setCurrentTime] = useState<string>('');
 
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -53,6 +56,25 @@ export default function AlarmScreen() {
   const gradientIntensity = useSharedValue(0);
 
   const alarm = alarms.find(a => a.id === id);
+
+  // Get current system time for display (always shows current time when alarm screen is active)
+  const getCurrentDisplayTime = () => {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  // Update current time every second
+  useEffect(() => {
+    // Set initial time
+    setCurrentTime(getCurrentDisplayTime());
+    
+    // Update time every second
+    const timeInterval = setInterval(() => {
+      setCurrentTime(getCurrentDisplayTime());
+    }, 1000);
+
+    return () => clearInterval(timeInterval);
+  }, []);
 
   const toggleAlarm = async () => {
     if (alarm) {
@@ -171,6 +193,17 @@ export default function AlarmScreen() {
       console.log('All quotes swiped, stopping alarm:', id);
       
       try {
+        // If this is a snoozed alarm, restore it to original settings
+        if (alarm && alarm.isSnoozed) {
+          const restoredAlarm = alarmService.restoreOriginalAlarm(alarm.id);
+          if (restoredAlarm) {
+            const updatedAlarms = alarms.map(a => 
+              a.id === alarm.id ? restoredAlarm : a
+            );
+            await saveAlarms(updatedAlarms);
+          }
+        }
+        
         // Stop the alarm (sound & haptics)
         await stopAlarm(id as string);
         
@@ -361,8 +394,8 @@ export default function AlarmScreen() {
 
       {/* Main Content Layout */}
       <View style={styles.contentWrapper}>
-        {/* Time without box */}
-        <Text style={styles.alarmTime}>{alarm.time}</Text>
+        {/* Time without box - shows current system time when alarm screen is active */}
+        <Text style={styles.alarmTime}>{currentTime}</Text>
         {/* Alarm label if present */}
         {alarm.name ? (
           <Text style={styles.alarmLabel}>{alarm.name}</Text>
@@ -474,18 +507,86 @@ export default function AlarmScreen() {
             </Animated.View>
           </PanGestureHandler>
         </View>
-        {/* Quick Dismiss Button at the bottom */}
-        <TouchableOpacity 
-          style={styles.quickDismissButton}
-          onPress={async () => {
-            setAlarmStopped(true);
-            await stopAlarm(id as string);
-            router.replace('/');
-          }}
-        >
-          <Text style={styles.quickDismissText}>Quick Dismiss</Text>
-        </TouchableOpacity>
+        {/* Action buttons at the bottom */}
+        <View style={styles.actionButtonsContainer}>
+          {/* Snooze Button */}
+          <TouchableOpacity 
+            style={styles.snoozeButton}
+            onPress={async () => {
+              if (alarm && !isSnoozed) {
+                setAlarmStopped(true);
+                
+                // Snooze the alarm and get the updated alarm data
+                const snoozedAlarm = await alarmService.snoozeAlarm(alarm.id);
+                
+                if (snoozedAlarm) {
+                  // Update the storage with the snoozed alarm
+                  const updatedAlarms = alarms.map(a => 
+                    a.id === alarm.id ? snoozedAlarm : a
+                  );
+                  await saveAlarms(updatedAlarms);
+                  
+                  // Show snooze confirmation
+                  setIsSnoozed(true);
+                  setSnoozeUntilTime(snoozedAlarm.snoozeUntilTime || '');
+                  
+                  // Wait a moment before navigating to show confirmation
+                  setTimeout(() => {
+                    WakeUpStatsManager.recordWakeUp();
+                    router.replace('/');
+                  }, 1500);
+                } else {
+                  // If snooze failed, just navigate away
+                  await WakeUpStatsManager.recordWakeUp();
+                  router.replace('/');
+                }
+              }
+            }}
+          >
+            <Text style={styles.actionButtonText}>Snooze</Text>
+          </TouchableOpacity>
+          
+          {/* Dismiss Button */}
+          <TouchableOpacity 
+            style={styles.dismissButton}
+            onPress={async () => {
+              if (alarm) {
+                setAlarmStopped(true);
+                
+                // If this is a snoozed alarm, restore it to original settings
+                if (alarm.isSnoozed) {
+                  const restoredAlarm = alarmService.restoreOriginalAlarm(alarm.id);
+                  if (restoredAlarm) {
+                    const updatedAlarms = alarms.map(a => 
+                      a.id === alarm.id ? restoredAlarm : a
+                    );
+                    await saveAlarms(updatedAlarms);
+                  }
+                }
+                
+                await stopAlarm(id as string);
+                await WakeUpStatsManager.recordWakeUp();
+                router.replace('/');
+              }
+            }}
+          >
+            <Text style={styles.actionButtonText}>Dismiss</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+      
+      {/* Snooze Confirmation Overlay */}
+      {isSnoozed && (
+        <View style={styles.snoozeConfirmationOverlay}>
+          <View style={styles.snoozeConfirmationContent}>
+            <Text style={styles.snoozeConfirmationTitle}>😴 Alarm Snoozed</Text>
+            <Text style={styles.snoozeConfirmationMessage}>
+              Your alarm will ring again at{'\n'}
+              <Text style={styles.snoozeConfirmationTime}>{snoozeUntilTime}</Text>
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -595,14 +696,20 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
-  quickDismissButton: {
-    marginTop: 32,
-    marginBottom: 16,
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  snoozeButton: {
+    flex: 1,
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 28,
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
     paddingVertical: 16,
-    alignSelf: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     shadowColor: 'rgba(0, 0, 0, 0.4)',
@@ -611,7 +718,21 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  quickDismissText: {
+  dismissButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 28,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    shadowColor: 'rgba(0, 0, 0, 0.4)',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  actionButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: '600',
@@ -624,19 +745,6 @@ const styles = StyleSheet.create({
   dismissButtonContainer: {
     marginTop: 15,
     alignItems: 'center',
-  },
-  dismissButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 22,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    backdropFilter: 'blur(20px)',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
   },
   dismissButtonText: {
     fontSize: 16,
@@ -793,5 +901,49 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     letterSpacing: 0.2,
+  },
+  snoozeConfirmationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  snoozeConfirmationContent: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    backdropFilter: 'blur(20px)',
+    alignItems: 'center',
+    minWidth: 280,
+  },
+  snoozeConfirmationTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  snoozeConfirmationMessage: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    lineHeight: 24,
+    letterSpacing: 0.3,
+  },
+  snoozeConfirmationTime: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFA500',
+    letterSpacing: 1,
   },
 });
