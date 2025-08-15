@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Quote as QuoteIcon } from 'lucide-react-native';
+import { X, Quote as QuoteIcon, Trash2 } from 'lucide-react-native';
 import { Quote } from '@/types';
 import { theme, commonStyles } from '@/constants/theme';
 
@@ -10,9 +10,12 @@ interface AddQuoteModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (quote: Quote) => void;
+  onDelete?: (quoteId: string) => void;
+  editingQuote?: Quote | null;
+  folderId?: string;
 }
 
-export function AddQuoteModal({ visible, onClose, onSave }: AddQuoteModalProps) {
+export function AddQuoteModal({ visible, onClose, onSave, onDelete, editingQuote, folderId }: AddQuoteModalProps) {
   const [text, setText] = useState('');
   const [author, setAuthor] = useState('');
   const [selectedGradient, setSelectedGradient] = useState(0);
@@ -26,6 +29,21 @@ export function AddQuoteModal({ visible, onClose, onSave }: AddQuoteModalProps) 
     ['#EF4444', '#F59E0B', '#10B981'], // Red to Yellow to Green
   ];
 
+  // Load quote data when editing
+  useEffect(() => {
+    if (editingQuote) {
+      setText(editingQuote.text);
+      setAuthor(editingQuote.author || '');
+      // Find the gradient index or default to 0
+      const gradientIndex = gradientOptions.findIndex(
+        gradient => JSON.stringify(gradient) === JSON.stringify(editingQuote.gradientColors)
+      );
+      setSelectedGradient(gradientIndex >= 0 ? gradientIndex : 0);
+    } else {
+      resetForm();
+    }
+  }, [editingQuote, visible]);
+
   const resetForm = () => {
     setText('');
     setAuthor('');
@@ -38,15 +56,28 @@ export function AddQuoteModal({ visible, onClose, onSave }: AddQuoteModalProps) 
       return;
     }
 
-    const newQuote: Quote = {
-      id: Date.now().toString(),
-      text: text.trim(),
-      author: author.trim() || undefined,
-      gradientColors: gradientOptions[selectedGradient],
-      createdAt: Date.now(),
-    };
-
-    onSave(newQuote);
+    if (editingQuote) {
+      // Update existing quote
+      const updatedQuote: Quote = {
+        ...editingQuote,
+        text: text.trim(),
+        author: author.trim() || undefined,
+        gradientColors: gradientOptions[selectedGradient],
+      };
+      onSave(updatedQuote);
+    } else {
+      // Create new quote
+      const newQuote: Quote = {
+        id: Date.now().toString(),
+        text: text.trim(),
+        author: author.trim() || undefined,
+        gradientColors: gradientOptions[selectedGradient],
+        createdAt: Date.now(),
+        folderId: folderId || '',
+      };
+      onSave(newQuote);
+    }
+    
     resetForm();
   };
 
@@ -63,7 +94,7 @@ export function AddQuoteModal({ visible, onClose, onSave }: AddQuoteModalProps) 
             <TouchableOpacity onPress={handleClose}>
               <X size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
-            <Text style={styles.title}>New Quote</Text>
+            <Text style={styles.title}>{editingQuote ? 'Edit Quote' : 'New Quote'}</Text>
             <TouchableOpacity onPress={handleSave}>
               <Text style={styles.saveButton}>Save</Text>
             </TouchableOpacity>
@@ -120,6 +151,34 @@ export function AddQuoteModal({ visible, onClose, onSave }: AddQuoteModalProps) 
                 ))}
               </View>
             </View>
+
+            {editingQuote && (
+              <View style={styles.section}>
+                <TouchableOpacity 
+                  style={[styles.dangerButton, commonStyles.glassCard]}
+                  onPress={() => {
+                    Alert.alert(
+                      'Delete Quote',
+                      'Are you sure you want to delete this quote?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            onDelete?.(editingQuote.id);
+                            resetForm();
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Trash2 size={20} color="#ef4444" />
+                  <Text style={styles.dangerButtonText}>Delete Quote</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </SafeAreaView>
       </View>
@@ -208,5 +267,29 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: theme.borderRadius.md,
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  dangerButtonText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: '#ef4444',
+  },
+  deleteButton: {
+    backgroundColor: theme.colors.error,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+  },
+  deleteButtonText: {
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.medium,
   },
 });

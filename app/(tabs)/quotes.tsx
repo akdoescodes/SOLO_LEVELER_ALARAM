@@ -2,16 +2,26 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Quote as QuoteIcon } from 'lucide-react-native';
+import { Plus, Folder as FolderIcon } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStorage } from '@/hooks/useStorage';
+import { Quote } from '@/types';
+import { FolderCard } from '@/components/FolderCard';
 import { QuoteCard } from '@/components/QuoteCard';
 import { AddQuoteModal } from '@/components/AddQuoteModal';
+import { AddFolderModal } from '@/components/AddFolderModal';
+import { FolderManagementModal } from '@/components/FolderManagementModal';
 import { theme, commonStyles } from '@/constants/theme';
 
 export default function QuotesScreen() {
-  const { quotes, saveQuotes, loaded } = useStorage();
+  const { quoteFolders, quotes, saveQuotes, loaded, createFolder, getQuotesByFolderId, saveQuoteFolders } = useStorage();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [showFolderContent, setShowFolderContent] = useState(false);
+  const [showAddFolderModal, setShowAddFolderModal] = useState(false);
+  const [showManagementModal, setShowManagementModal] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<any>(null);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
 
   // ScrollView ref for resetting scroll position
   const scrollViewRef = useRef<ScrollView>(null);
@@ -83,6 +93,32 @@ export default function QuotesScreen() {
     }, [])
   );
 
+  // Helper functions
+  const getSelectedFolderName = () => {
+    const folder = quoteFolders.find(f => f.id === selectedFolderId);
+    return folder?.name || 'Folder';
+  };
+
+  const openFolder = (folderId: string) => {
+    setSelectedFolderId(folderId);
+    setShowFolderContent(true);
+  };
+
+  const openFolderManagement = (folder: any) => {
+    setSelectedFolder(folder);
+    setShowManagementModal(true);
+  };
+
+  const goBackToFolders = () => {
+    setShowFolderContent(false);
+    setSelectedFolderId(null);
+  };
+
+  const getCurrentFolderQuotes = () => {
+    if (!selectedFolderId) return [];
+    return getQuotesByFolderId(selectedFolderId);
+  };
+
   const deleteQuote = (quoteId: string) => {
     Alert.alert(
       'Delete Quote',
@@ -127,10 +163,18 @@ export default function QuotesScreen() {
           { backgroundColor: isScrolled ? theme.colors.headerBackground : theme.colors.background }
         ]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Quotes</Text>
+            <Text style={styles.title}>
+              {showFolderContent ? getSelectedFolderName() : 'Quotes'}
+            </Text>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => setShowAddModal(true)}
+              onPress={() => {
+                if (showFolderContent) {
+                  setShowAddModal(true);
+                } else {
+                  setShowAddFolderModal(true);
+                }
+              }}
             >
               <LinearGradient
                 colors={theme.colors.gradient.primary}
@@ -157,39 +201,170 @@ export default function QuotesScreen() {
         alwaysBounceVertical={true}
         indicatorStyle="white"
       >
-          {quotes.length === 0 ? (
-            <View style={styles.emptyState}>
-              <QuoteIcon size={64} color={theme.colors.text.secondary} />
-              <Text style={styles.emptyStateTitle}>No Quotes Added</Text>
-              <Text style={styles.emptyStateText}>
-                Add your favorite quotes to see them when your alarm rings
-              </Text>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.sectionTitle}>Quotes</Text>
-              {quotes.map(quote => (
-                <QuoteCard
-                  key={quote.id}
-                  quote={quote}
-                  onDelete={() => deleteQuote(quote.id)}
-                  showDeleteButton={true}
-                />
-              ))}
-              
-              {/* End spacing for visual breathing room */}
-              <View style={styles.endSpacing} />
-            </>
-          )}
-        </ScrollView>
+        {!showFolderContent ? (
+          // Show folders view
+          <>
+            {quoteFolders.length === 0 ? (
+              <View style={styles.emptyState}>
+                <FolderIcon size={64} color={theme.colors.text.secondary} />
+                <Text style={styles.emptyStateTitle}>No Quote Folders</Text>
+                <Text style={styles.emptyStateText}>
+                  Create your first folder to organize your quotes
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.sectionTitle}>Folders</Text>
+                {quoteFolders.map(folder => (
+                  <FolderCard
+                    key={folder.id}
+                    folder={folder}
+                    onPress={() => openFolderManagement(folder)}
+                  />
+                ))}
+                {/* End spacing for visual breathing room */}
+                <View style={styles.endSpacing} />
+              </>
+            )}
+          </>
+        ) : (
+          // Show folder content (quotes inside selected folder)
+          <>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={goBackToFolders}
+            >
+              <Text style={styles.backButtonText}>← Back to Folders</Text>
+            </TouchableOpacity>
+            
+            {getCurrentFolderQuotes().length === 0 ? (
+              <View style={styles.emptyState}>
+                <FolderIcon size={64} color={theme.colors.text.secondary} />
+                <Text style={styles.emptyStateTitle}>No Quotes in This Folder</Text>
+                <Text style={styles.emptyStateText}>
+                  Add some quotes to this folder to get started
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.sectionTitle}>
+                  {getCurrentFolderQuotes().length} Quote{getCurrentFolderQuotes().length !== 1 ? 's' : ''}
+                </Text>
+                {getCurrentFolderQuotes().map(quote => (
+                  <QuoteCard
+                    key={quote.id}
+                    quote={quote}
+                    onDelete={() => deleteQuote(quote.id)}
+                    showDeleteButton={true}
+                  />
+                ))}
+                {/* End spacing for visual breathing room */}
+                <View style={styles.endSpacing} />
+              </>
+            )}
+          </>
+        )}
+      </ScrollView>
       </View>
 
       <AddQuoteModal
         visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={(newQuote) => {
-          saveQuotes([...quotes, newQuote]);
+        onClose={() => {
           setShowAddModal(false);
+          setEditingQuote(null);
+          
+          // If we were editing from a folder modal, reopen it
+          if (editingQuote && selectedFolder) {
+            setShowManagementModal(true);
+          }
+        }}
+        editingQuote={editingQuote}
+        folderId={selectedFolderId || quoteFolders.find(f => f.isDefault)?.id || quoteFolders[0]?.id}
+        onSave={(quote) => {
+          if (editingQuote) {
+            // Update existing quote
+            const updatedQuotes = quotes.map(q => q.id === quote.id ? quote : q);
+            saveQuotes(updatedQuotes);
+          } else {
+            // Add new quote
+            const targetFolderId = selectedFolderId || quoteFolders.find(f => f.isDefault)?.id || quoteFolders[0]?.id;
+            const quoteWithFolder = { ...quote, folderId: targetFolderId };
+            saveQuotes([...quotes, quoteWithFolder]);
+          }
+          setShowAddModal(false);
+          setEditingQuote(null);
+          
+          // If we were editing from a folder modal, reopen it
+          if (editingQuote && selectedFolder) {
+            setShowManagementModal(true);
+          }
+        }}
+        onDelete={(quoteId) => {
+          const updatedQuotes = quotes.filter(q => q.id !== quoteId);
+          saveQuotes(updatedQuotes);
+          setShowAddModal(false);
+          setEditingQuote(null);
+          
+          // If we were editing from a folder modal, reopen it
+          if (selectedFolder) {
+            setShowManagementModal(true);
+          }
+        }}
+      />
+      
+      <AddFolderModal
+        visible={showAddFolderModal}
+        onClose={() => setShowAddFolderModal(false)}
+        onSave={async (name, description, color) => {
+          await createFolder(name, description, color);
+          setShowAddFolderModal(false);
+        }}
+      />
+
+      <FolderManagementModal
+        visible={showManagementModal}
+        folder={selectedFolder}
+        quotes={quotes}
+        onClose={() => {
+          setShowManagementModal(false);
+          setSelectedFolder(null);
+        }}
+        onSave={async (updatedFolder) => {
+          const updatedFolders = quoteFolders.map(f => 
+            f.id === updatedFolder.id ? updatedFolder : f
+          );
+          await saveQuoteFolders(updatedFolders);
+          setSelectedFolder(updatedFolder);
+        }}
+        onDelete={async () => {
+          if (selectedFolder) {
+            // Delete all quotes in the folder first
+            const quotesToKeep = quotes.filter(q => q.folderId !== selectedFolder.id);
+            await saveQuotes(quotesToKeep);
+            
+            // Then delete the folder
+            const updatedFolders = quoteFolders.filter(f => f.id !== selectedFolder.id);
+            await saveQuoteFolders(updatedFolders);
+            
+            setShowManagementModal(false);
+            setSelectedFolder(null);
+          }
+        }}
+        onAddQuote={() => {
+          setShowManagementModal(false);
+          setSelectedFolderId(selectedFolder?.id);
+          setEditingQuote(null);
+          setShowAddModal(true);
+        }}
+        onEditQuote={(quote) => {
+          setShowManagementModal(false);
+          setSelectedFolderId(selectedFolder?.id || '');
+          setEditingQuote(quote);
+          setShowAddModal(true);
+        }}
+        onDeleteQuote={async (quoteId) => {
+          const updatedQuotes = quotes.filter(q => q.id !== quoteId);
+          await saveQuotes(updatedQuotes);
         }}
       />
     </View>
@@ -285,5 +460,18 @@ const styles = StyleSheet.create({
   endSpacing: {
     height: theme.spacing.xl * 2, // Extra spacing at the end for visual breathing room
     marginTop: theme.spacing.lg,
+  },
+  backButton: {
+    padding: theme.spacing.md,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: theme.colors.text.primary,
   },
 });

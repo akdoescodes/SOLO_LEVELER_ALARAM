@@ -16,6 +16,20 @@ export interface Alarm {
   snoozeDuration?: number; // Custom snooze duration in minutes
   snoozeUntilTime?: string; // The actual time when snooze should trigger (HH:mm)
   snoozeTimestamp?: number; // Timestamp for precise snooze timing
+  // Folder-based quote system
+  quoteFolderId?: string; // Which folder to use for this alarm
+  swipeRequirement?: number; // How many quotes to swipe for this specific alarm
+}
+
+export interface QuoteFolder {
+  id: string;
+  name: string;
+  description?: string;
+  color: string; // For visual distinction
+  icon?: string; // Icon name
+  createdAt: number;
+  isDefault: boolean; // Only one default folder allowed
+  quoteCount: number; // Cached count for performance
 }
 
 export interface Quote {
@@ -24,6 +38,7 @@ export interface Quote {
   author?: string;
   gradientColors?: string[];
   createdAt: number;
+  folderId: string; // Links quote to a folder
 }
 
 export interface Settings {
