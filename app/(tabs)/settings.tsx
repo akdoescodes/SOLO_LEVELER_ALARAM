@@ -208,6 +208,38 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Snooze Settings</Text>
+            
+            <View style={[styles.settingCard, commonStyles.settingsCard]}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <IconWithLabel icon={Clock} size={20}>
+                    <Text style={styles.settingLabel}>Snooze Duration</Text>
+                    <Text style={styles.settingDescription}>
+                      Minutes to snooze when alarm is snoozed
+                    </Text>
+                  </IconWithLabel>
+                </View>
+                <View style={styles.counterContainer}>
+                  <TouchableOpacity
+                    style={styles.counterButton}
+                    onPress={() => updateSetting('snoozeMinutes', Math.max(1, settings.snoozeMinutes - 1))}
+                  >
+                    <GradientIcon icon={Minus} size={18} />
+                  </TouchableOpacity>
+                  <Text style={styles.counterValue}>{settings.snoozeMinutes}</Text>
+                  <TouchableOpacity
+                    style={styles.counterButton}
+                    onPress={() => updateSetting('snoozeMinutes', Math.min(30, settings.snoozeMinutes + 1))}
+                  >
+                    <GradientIcon icon={Plus} size={18} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+
           <View style={[styles.aboutCard, commonStyles.glassCard]}>
             <Text style={styles.aboutTitle}>About</Text>
             <Text style={styles.aboutText}>

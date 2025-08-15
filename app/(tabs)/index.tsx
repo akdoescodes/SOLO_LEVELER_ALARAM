@@ -94,9 +94,33 @@ export default function AlarmsScreen() {
   );
 
   const toggleAlarm = (alarmId: string) => {
-    const updatedAlarms = alarms.map(alarm =>
-      alarm.id === alarmId ? { ...alarm, enabled: !alarm.enabled } : alarm
-    );
+    const updatedAlarms = alarms.map(alarm => {
+      if (alarm.id === alarmId) {
+        const newEnabled = !alarm.enabled;
+        
+        // If this alarm has snooze state, always reset it when toggling
+        if (alarm.isSnoozed) {
+          console.log('🔄 Resetting snoozed alarm to original settings:', alarm.originalTime);
+          return {
+            ...alarm,
+            enabled: newEnabled,
+            // Reset snooze state back to original alarm
+            time: alarm.originalTime || alarm.time,
+            days: alarm.originalDays || alarm.days,
+            isSnoozed: false,
+            originalTime: undefined,
+            originalDays: undefined,
+            snoozeDuration: undefined,
+            snoozeUntilTime: undefined,
+            snoozeTimestamp: undefined,
+          };
+        }
+        
+        // Normal toggle for non-snoozed alarms
+        return { ...alarm, enabled: newEnabled };
+      }
+      return alarm;
+    });
     saveAlarms(updatedAlarms);
     console.log('🔄 Toggled alarm, updating service immediately');
     // Update the alarm service immediately

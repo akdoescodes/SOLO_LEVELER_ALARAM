@@ -55,6 +55,10 @@ export default function AlarmScreen() {
   const gradientFlow = useSharedValue(0);
   const gradientIntensity = useSharedValue(0);
 
+  // For arrow wiggle animations
+  const leftArrowWiggle = useSharedValue(0);
+  const rightArrowWiggle = useSharedValue(0);
+
   const alarm = alarms.find(a => a.id === id);
 
   // Get current system time for display (always shows current time when alarm screen is active)
@@ -172,6 +176,30 @@ export default function AlarmScreen() {
       true
     );
   }, [quotesRef.current.length]);
+
+  // Start arrow animations immediately when component mounts
+  useEffect(() => {
+    console.log('Starting arrow wiggle animations immediately');
+    
+    // Initialize at 0
+    leftArrowWiggle.value = 0;
+    rightArrowWiggle.value = 0;
+    
+    // Start continuous animations with different phases
+    leftArrowWiggle.value = withRepeat(
+      withTiming(1, { duration: 2000, easing: Easing.linear }),
+      -1,
+      false
+    );
+    
+    rightArrowWiggle.value = withRepeat(
+      withDelay(500, withTiming(1, { duration: 2000, easing: Easing.linear })),
+      -1,
+      false
+    );
+    
+    console.log('Arrow animations started immediately');
+  }, []); // Empty dependency array - run once on mount
 
   const onSwipeComplete = async () => {
     // Safety check - don't proceed if we don't have quotes or are already stopped
@@ -307,6 +335,29 @@ export default function AlarmScreen() {
   const backgroundCard2AnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: 0.8, // Static opacity for third background card
+    };
+  });
+
+  // Create animated styles for arrow wiggle effect
+  const leftArrowAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { 
+          translateX: Math.sin(leftArrowWiggle.value * Math.PI * 2) * 7
+        }
+      ],
+    };
+  });
+
+  const rightArrowAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { 
+          translateX: Math.sin(rightArrowWiggle.value * Math.PI * 2) * 7
+        }
+      ],
     };
   });
 
@@ -501,7 +552,11 @@ export default function AlarmScreen() {
                   </Text>
                 )}
                 <View style={styles.swipeHint}>
-                  <Text style={styles.swipeHintText}>← Swipe to continue →</Text>
+                  <View style={styles.swipeHintRow}>
+                    <Animated.Text style={[styles.swipeHintArrow, leftArrowAnimatedStyle]}>←</Animated.Text>
+                    <Text style={styles.swipeHintText}> Swipe to continue </Text>
+                    <Animated.Text style={[styles.swipeHintArrow, rightArrowAnimatedStyle]}>→</Animated.Text>
+                  </View>
                 </View>
               </View>
             </Animated.View>
@@ -517,7 +572,7 @@ export default function AlarmScreen() {
                 setAlarmStopped(true);
                 
                 // Snooze the alarm and get the updated alarm data
-                const snoozedAlarm = await alarmService.snoozeAlarm(alarm.id);
+                const snoozedAlarm = await alarmService.snoozeAlarm(alarm.id, settings.snoozeMinutes);
                 
                 if (snoozedAlarm) {
                   // Update the storage with the snoozed alarm
@@ -581,7 +636,8 @@ export default function AlarmScreen() {
           <View style={styles.snoozeConfirmationContent}>
             <Text style={styles.snoozeConfirmationTitle}>😴 Alarm Snoozed</Text>
             <Text style={styles.snoozeConfirmationMessage}>
-              Your alarm will ring again at{'\n'}
+              Snoozed for {settings.snoozeMinutes} minute{settings.snoozeMinutes !== 1 ? 's' : ''}{'\n'}
+              Will ring again at{'\n'}
               <Text style={styles.snoozeConfirmationTime}>{snoozeUntilTime}</Text>
             </Text>
           </View>
@@ -872,6 +928,11 @@ const styles = StyleSheet.create({
     bottom: 32,
     alignSelf: 'center',
   },
+  swipeHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   swipeHintText: {
     fontSize: 14,
     fontWeight: '500',
@@ -945,5 +1006,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFA500',
     letterSpacing: 1,
+  },
+  swipeHintArrow: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginHorizontal: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
