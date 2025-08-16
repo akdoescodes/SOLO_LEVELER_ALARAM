@@ -273,8 +273,8 @@ export default function QuotesScreen() {
           setShowAddModal(false);
           setEditingQuote(null);
           
-          // If we were editing from a folder modal, reopen it
-          if (editingQuote && selectedFolder) {
+          // If we came from a folder modal (either editing or adding), reopen it
+          if (selectedFolder) {
             setShowManagementModal(true);
           }
         }}
@@ -294,8 +294,8 @@ export default function QuotesScreen() {
           setShowAddModal(false);
           setEditingQuote(null);
           
-          // If we were editing from a folder modal, reopen it
-          if (editingQuote && selectedFolder) {
+          // If we came from a folder modal (either editing or adding), reopen it
+          if (selectedFolder) {
             setShowManagementModal(true);
           }
         }}

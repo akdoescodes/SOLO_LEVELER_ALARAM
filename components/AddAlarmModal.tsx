@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, Alert, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Clock, Music, Upload } from 'lucide-react-native';
+import { X, Clock, Music, Upload, Folder, Quote } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { Alarm } from '@/types';
+import { useStorage } from '@/hooks/useStorage';
 import { theme, commonStyles } from '@/constants/theme';
 
 interface AddAlarmModalProps {
@@ -18,6 +19,8 @@ interface AddAlarmModalProps {
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModalProps) {
+  const { quoteFolders, quotes } = useStorage();
+  
   const [title, setTitle] = useState('');
   const [label, setLabel] = useState(''); // Changed from 'name' to 'label'
   const [time, setTime] = useState({ hours: 7, minutes: 0, seconds: 0 });
@@ -26,6 +29,12 @@ export default function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModa
   const [soundUri, setSoundUri] = useState<string | undefined>(undefined);
   const [soundName, setSoundName] = useState<string | undefined>(undefined);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  
+  // Quote folder selection
+  const [selectedQuoteFolderId, setSelectedQuoteFolderId] = useState<string>('');
+  const [swipeRequirement, setSwipeRequirement] = useState<number>(4);
+  const [quoteOrderMode, setQuoteOrderMode] = useState<'random' | 'sequential' | 'newest' | 'oldest'>('random');
+  const [folderSearchQuery, setFolderSearchQuery] = useState<string>('');
   
   // Schedule date range
   const [scheduleStartDate, setScheduleStartDate] = useState<Date>(new Date());
@@ -39,6 +48,85 @@ export default function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModa
   // Scroll enhancement states
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(false);
+
+  // Calculate available quotes in selected folder
+  const getAvailableQuotesCount = () => {
+    if (!selectedQuoteFolderId) {
+      return quotes.length; // If no folder selected, use all quotes
+    }
+    return quotes.filter(quote => quote.folderId === selectedQuoteFolderId).length;
+  };
+
+  // Get default folder (first folder with quotes or first folder)
+  const getDefaultFolder = () => {
+    const folderWithQuotes = quoteFolders.find(folder => 
+      quotes.filter(q => q.folderId === folder.id).length > 0
+    );
+    return folderWithQuotes || quoteFolders[0];
+  };
+
+  // Get effective folder and quote count (falls back to default if current has 0 quotes)
+  const getEffectiveFolderInfo = () => {
+    const currentQuotes = getAvailableQuotesCount();
+    if (selectedQuoteFolderId && currentQuotes === 0) {
+      // Current folder has no quotes, fall back to default
+      const defaultFolder = getDefaultFolder();
+      if (defaultFolder) {
+        const defaultQuotes = quotes.filter(q => q.folderId === defaultFolder.id).length;
+        return {
+          folderId: defaultFolder.id,
+          folderName: defaultFolder.name,
+          quotesCount: defaultQuotes,
+          isUsingDefault: true
+        };
+      }
+    }
+    
+    return {
+      folderId: selectedQuoteFolderId,
+      folderName: selectedQuoteFolderId ? quoteFolders.find(f => f.id === selectedQuoteFolderId)?.name : 'All Folders',
+      quotesCount: currentQuotes,
+      isUsingDefault: false
+    };
+  };
+
+  // Get slider range
+  const getSliderRange = () => {
+    const effectiveInfo = getEffectiveFolderInfo();
+    return {
+      min: 1,
+      max: Math.max(effectiveInfo.quotesCount, 1),
+      effectiveInfo
+    };
+  };
+
+  // Adjust swipe requirement when folder changes
+  useEffect(() => {
+    const { effectiveInfo } = getSliderRange();
+    
+    if (effectiveInfo.quotesCount > 0) {
+      // If current requirement exceeds available, reduce it
+      if (swipeRequirement > effectiveInfo.quotesCount) {
+        setSwipeRequirement(effectiveInfo.quotesCount);
+      }
+      // If using default folder due to empty selection, set to 4 swipes
+      else if (effectiveInfo.isUsingDefault) {
+        setSwipeRequirement(Math.min(4, effectiveInfo.quotesCount));
+      }
+      // If no requirement is set (like on first load), set a sensible default
+      else if (swipeRequirement === 1 && selectedQuoteFolderId === '') {
+        setSwipeRequirement(Math.min(effectiveInfo.quotesCount, 4));
+      }
+    } else {
+      // No quotes available anywhere, set to 1
+      setSwipeRequirement(1);
+    }
+  }, [selectedQuoteFolderId, quotes]);
+
+  // Filter folders based on search query
+  const filteredFolders = quoteFolders.filter(folder =>
+    folder.name.toLowerCase().includes(folderSearchQuery.toLowerCase())
+  );
 
   // Handle scroll events for progress and end detection
   const handleScrollModal = (event: any) => {
@@ -91,6 +179,10 @@ export default function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModa
     setSelectedDays([]);
     setSoundUri(undefined);
     setSoundName(undefined);
+    setSelectedQuoteFolderId('');
+    setSwipeRequirement(4); // Default to 4 swipes
+    setQuoteOrderMode('random');
+    setFolderSearchQuery('');
     setScheduleStartDate(new Date());
     setScheduleEndDate(new Date());
     setShowScheduleSection(false);
@@ -149,6 +241,9 @@ export default function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModa
       createdAt: Date.now(),
       startDate: hasStartDate ? scheduleStartDate.toISOString() : undefined,
       endDate: hasEndDate ? scheduleEndDate.toISOString() : undefined, // undefined means permanent
+      quoteFolderId: selectedQuoteFolderId || undefined,
+      swipeRequirement: swipeRequirement,
+      quoteOrderMode: quoteOrderMode,
     });
     
     resetForm();
@@ -358,6 +453,206 @@ export default function AddAlarmModal({ visible, onClose, onSave }: AddAlarmModa
                 <Upload size={20} color={theme.colors.text.secondary} />
               </TouchableOpacity>
             </View>
+
+            {/* 6. Quote Folder Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Quote Folder</Text>
+              <Text style={styles.sectionDescription}>Choose which folder's quotes to display when alarm goes off</Text>
+              
+              {quoteFolders.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Folder size={24} color={theme.colors.text.secondary} />
+                  <Text style={styles.emptyText}>No quote folders available</Text>
+                  <Text style={styles.emptySubtext}>Create quote folders in the Quotes tab first</Text>
+                </View>
+              ) : (
+                <>
+                  {/* Search Input */}
+                  <TextInput
+                    style={styles.searchInput}
+                    value={folderSearchQuery}
+                    onChangeText={setFolderSearchQuery}
+                    placeholder="Search folders..."
+                    placeholderTextColor={theme.colors.text.secondary}
+                  />
+                  
+                  <View style={styles.folderScrollFrame}>
+                    <ScrollView 
+                      style={styles.folderScrollView}
+                      showsVerticalScrollIndicator={true}
+                      nestedScrollEnabled={true}
+                    >
+                      <View style={styles.folderContainer}>
+                        {/* Always show "All Quotes" option first */}
+                        <TouchableOpacity
+                          style={[
+                            styles.folderOption,
+                            !selectedQuoteFolderId && styles.folderOptionSelected
+                          ]}
+                          onPress={() => setSelectedQuoteFolderId('')}
+                        >
+                          <Quote size={20} color={theme.colors.text.accent} />
+                          <View style={styles.folderInfo}>
+                            <Text style={styles.folderName}>All Quotes</Text>
+                            <Text style={styles.folderSubtext}>{quotes.length} quotes available</Text>
+                          </View>
+                        </TouchableOpacity>
+                        
+                        {/* Show filtered folders */}
+                        {filteredFolders.length === 0 && folderSearchQuery ? (
+                          <View style={styles.noResultsContainer}>
+                            <Text style={styles.noResultsText}>No folders found matching "{folderSearchQuery}"</Text>
+                          </View>
+                        ) : (
+                          filteredFolders.map((folder) => {
+                            const folderQuotes = quotes.filter(q => q.folderId === folder.id);
+                            return (
+                              <TouchableOpacity
+                                key={folder.id}
+                                style={[
+                                  styles.folderOption,
+                                  selectedQuoteFolderId === folder.id && styles.folderOptionSelected
+                                ]}
+                                onPress={() => setSelectedQuoteFolderId(folder.id)}
+                              >
+                                <View style={[styles.folderIcon, { backgroundColor: folder.color }]} />
+                                <View style={styles.folderInfo}>
+                                  <Text style={styles.folderName}>{folder.name}</Text>
+                                  <Text style={styles.folderSubtext}>{folderQuotes.length} quotes</Text>
+                                </View>
+                              </TouchableOpacity>
+                            );
+                          })
+                        )}
+                      </View>
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+            </View>
+
+            {/* 7. Swipe Requirement Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Quotes to Swipe</Text>
+              <Text style={styles.sectionDescription}>
+                Choose how many quotes to swipe through before stopping the alarm
+              </Text>
+              
+              {(() => {
+                const { min, max, effectiveInfo } = getSliderRange();
+                
+                return (
+                  <View style={styles.sliderContainer}>
+                    {/* Plus/Minus Controls */}
+                    <View style={styles.sliderControls}>
+                      <TouchableOpacity
+                        style={[styles.sliderButton, swipeRequirement <= min && styles.sliderButtonDisabled]}
+                        onPress={() => setSwipeRequirement(Math.max(min, swipeRequirement - 1))}
+                        disabled={swipeRequirement <= min}
+                      >
+                        <Text style={[styles.sliderButtonText, swipeRequirement <= min && styles.sliderButtonTextDisabled]}>−</Text>
+                      </TouchableOpacity>
+                      
+                      <Text style={styles.sliderCurrentValue}>{swipeRequirement}</Text>
+                      
+                      <TouchableOpacity
+                        style={[styles.sliderButton, swipeRequirement >= max && styles.sliderButtonDisabled]}
+                        onPress={() => setSwipeRequirement(Math.min(max, swipeRequirement + 1))}
+                        disabled={swipeRequirement >= max}
+                      >
+                        <Text style={[styles.sliderButtonText, swipeRequirement >= max && styles.sliderButtonTextDisabled]}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                    
+                    {/* Folder Info */}
+                    <View style={styles.folderInfoContainer}>
+                      {effectiveInfo.isUsingDefault ? (
+                        <Text style={styles.warningText}>
+                          ⚠️ Selected folder is empty. Using "{effectiveInfo.folderName}" folder ({effectiveInfo.quotesCount} quotes)
+                        </Text>
+                      ) : (
+                        <Text style={styles.folderInfoText}>
+                          {effectiveInfo.folderId 
+                            ? `📁 ${effectiveInfo.folderName} • ${effectiveInfo.quotesCount} quotes available`
+                            : `📚 All folders • ${effectiveInfo.quotesCount} total quotes available`
+                          }
+                        </Text>
+                      )}
+                    </View>
+                    
+                    {effectiveInfo.quotesCount === 0 && (
+                      <Text style={styles.warningText}>
+                        ⚠️ No quotes available. Please add quotes to a folder first.
+                      </Text>
+                    )}
+                  </View>
+                );
+              })()}
+            </View>
+
+            {/* 8. Quote Order Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Quote Order</Text>
+              <Text style={styles.sectionDescription}>How to arrange quotes during the alarm</Text>
+              
+              <View style={styles.orderContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.orderOption,
+                    quoteOrderMode === 'random' && styles.orderOptionSelected
+                  ]}
+                  onPress={() => setQuoteOrderMode('random')}
+                >
+                  <Text style={[
+                    styles.orderText,
+                    quoteOrderMode === 'random' && styles.orderTextSelected
+                  ]}>Random</Text>
+                  <Text style={styles.orderSubtext}>Shuffled order</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.orderOption,
+                    quoteOrderMode === 'sequential' && styles.orderOptionSelected
+                  ]}
+                  onPress={() => setQuoteOrderMode('sequential')}
+                >
+                  <Text style={[
+                    styles.orderText,
+                    quoteOrderMode === 'sequential' && styles.orderTextSelected
+                  ]}>Sequential</Text>
+                  <Text style={styles.orderSubtext}>In order added</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.orderOption,
+                    quoteOrderMode === 'newest' && styles.orderOptionSelected
+                  ]}
+                  onPress={() => setQuoteOrderMode('newest')}
+                >
+                  <Text style={[
+                    styles.orderText,
+                    quoteOrderMode === 'newest' && styles.orderTextSelected
+                  ]}>Newest</Text>
+                  <Text style={styles.orderSubtext}>Recently added first</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.orderOption,
+                    quoteOrderMode === 'oldest' && styles.orderOptionSelected
+                  ]}
+                  onPress={() => setQuoteOrderMode('oldest')}
+                >
+                  <Text style={[
+                    styles.orderText,
+                    quoteOrderMode === 'oldest' && styles.orderTextSelected
+                  ]}>Oldest</Text>
+                  <Text style={styles.orderSubtext}>Oldest first</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             
             {/* End spacing for visual breathing room */}
             <View style={styles.endSpacing} />
@@ -557,5 +852,213 @@ const styles = StyleSheet.create({
   endSpacing: {
     height: theme.spacing.xl, // Extra spacing at the end for visual breathing room
     marginTop: theme.spacing.md,
+  },
+  sectionDescription: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.md,
+    lineHeight: 20,
+  },
+  warningText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: '#FFB800',
+    textAlign: 'center',
+    marginTop: theme.spacing.sm,
+    padding: theme.spacing.sm,
+    backgroundColor: 'rgba(255, 184, 0, 0.1)',
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 184, 0, 0.3)',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  emptyText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.sm,
+  },
+  emptySubtext: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
+    textAlign: 'center',
+  },
+  folderContainer: {
+    gap: theme.spacing.sm,
+    padding: theme.spacing.sm,
+  },
+  folderScrollFrame: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: theme.borderRadius.md,
+    maxHeight: 500, // 2.5x the original height (200px * 2.5)
+  },
+  folderScrollView: {
+    flexGrow: 0, // Prevent it from expanding
+  },
+  searchInput: {
+    ...commonStyles.glassCard,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
+  },
+  noResultsContainer: {
+    padding: theme.spacing.lg,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  folderOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  folderOptionSelected: {
+    borderColor: theme.colors.text.accent,
+    borderWidth: 2,
+  },
+  folderIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: theme.spacing.md,
+  },
+  folderInfo: {
+    flex: 1,
+  },
+  folderName: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: theme.colors.text.primary,
+  },
+  folderSubtext: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+    marginTop: 2,
+  },
+  swipeContainer: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    justifyContent: 'center',
+  },
+  swipeOption: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  swipeOptionSelected: {
+    borderColor: theme.colors.text.accent,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  swipeText: {
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bold,
+    color: theme.colors.text.secondary,
+  },
+  swipeTextSelected: {
+    color: theme.colors.text.accent,
+  },
+  orderContainer: {
+    gap: theme.spacing.sm,
+  },
+  orderOption: {
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  orderOptionSelected: {
+    borderColor: theme.colors.text.accent,
+    borderWidth: 2,
+  },
+  orderText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.medium,
+    color: theme.colors.text.primary,
+  },
+  orderTextSelected: {
+    color: theme.colors.text.accent,
+  },
+  orderSubtext: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+    marginTop: 2,
+  },
+  // Slider Styles
+  sliderContainer: {
+    marginTop: theme.spacing.md,
+  },
+  sliderControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.lg,
+    marginVertical: theme.spacing.md,
+  },
+  sliderButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  sliderButtonDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  sliderButtonText: {
+    fontSize: 20,
+    fontFamily: theme.typography.fontFamily.bold,
+    color: theme.colors.text.primary,
+  },
+  sliderButtonTextDisabled: {
+    color: theme.colors.text.secondary,
+  },
+  sliderCurrentValue: {
+    fontSize: 24,
+    fontFamily: theme.typography.fontFamily.bold,
+    color: theme.colors.text.accent,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  folderInfoContainer: {
+    marginTop: theme.spacing.md,
+  },
+  folderInfoText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.regular,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

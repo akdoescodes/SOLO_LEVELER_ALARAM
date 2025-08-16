@@ -19,6 +19,7 @@ export interface Alarm {
   // Folder-based quote system
   quoteFolderId?: string; // Which folder to use for this alarm
   swipeRequirement?: number; // How many quotes to swipe for this specific alarm
+  quoteOrderMode?: 'random' | 'sequential' | 'newest' | 'oldest'; // How to order quotes
 }
 
 export interface QuoteFolder {

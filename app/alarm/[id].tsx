@@ -27,7 +27,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.4;
 
 export default function AlarmScreen() {
   const { id } = useLocalSearchParams();
-  const { alarms, quotes, settings, saveAlarms } = useStorage();
+  const { alarms, quotes, quoteFolders, settings, saveAlarms } = useStorage();
   
   // 🚀 PROFESSIONAL: Use alarm service directly instead of recreating hook
   const stopAlarm = async (alarmId: string) => {
@@ -101,21 +101,84 @@ export default function AlarmScreen() {
     if (quotesRef.current.length === 0 && quotes.length > 0) {
       console.log('🎯 PROFESSIONAL: Initializing quotes ONE TIME ONLY for alarm:', id);
       
-      // Shuffle and select quotes
-      const shuffled = [...quotes].sort(() => Math.random() - 0.5);
-      const required = Math.max(settings.quotesRequired || 3, 1);
-      const selected = shuffled.slice(0, required);
+      // Get default folder (first folder with quotes or first folder)
+      const getDefaultFolder = () => {
+        const folderWithQuotes = quoteFolders.find(folder => 
+          quotes.filter(q => q.folderId === folder.id).length > 0
+        );
+        return folderWithQuotes || quoteFolders[0];
+      };
+      
+      // Determine which quotes to use based on alarm settings
+      let availableQuotes = quotes;
+      let effectiveFolderId = alarm?.quoteFolderId;
+      
+      if (alarm?.quoteFolderId) {
+        // Use folder-specific quotes
+        availableQuotes = quotes.filter(q => q.folderId === alarm.quoteFolderId);
+        console.log(`📁 Checking quotes from folder ${alarm.quoteFolderId}: ${availableQuotes.length} quotes`);
+        
+        // If selected folder has no quotes, fall back to default folder
+        if (availableQuotes.length === 0) {
+          const defaultFolder = getDefaultFolder();
+          if (defaultFolder) {
+            availableQuotes = quotes.filter(q => q.folderId === defaultFolder.id);
+            effectiveFolderId = defaultFolder.id;
+            console.log(`🔄 Folder ${alarm.quoteFolderId} is empty, falling back to default folder ${defaultFolder.name}: ${availableQuotes.length} quotes`);
+          }
+        }
+      } else {
+        // Use all quotes (current behavior)
+        console.log(`📚 Using all available quotes: ${availableQuotes.length} quotes`);
+      }
+      
+      if (availableQuotes.length === 0) {
+        console.warn('⚠️ No quotes available for this alarm');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Apply ordering based on alarm settings
+      let orderedQuotes = [...availableQuotes];
+      const orderMode = alarm?.quoteOrderMode || 'random';
+      
+      switch (orderMode) {
+        case 'random':
+          orderedQuotes = orderedQuotes.sort(() => Math.random() - 0.5);
+          console.log('🔀 Applied random ordering');
+          break;
+        case 'sequential':
+          // Keep original order (by creation time)
+          orderedQuotes = orderedQuotes.sort((a, b) => a.createdAt - b.createdAt);
+          console.log('📝 Applied sequential ordering');
+          break;
+        case 'newest':
+          orderedQuotes = orderedQuotes.sort((a, b) => b.createdAt - a.createdAt);
+          console.log('🆕 Applied newest first ordering');
+          break;
+        case 'oldest':
+          orderedQuotes = orderedQuotes.sort((a, b) => a.createdAt - b.createdAt);
+          console.log('📜 Applied oldest first ordering');
+          break;
+        default:
+          orderedQuotes = orderedQuotes.sort(() => Math.random() - 0.5);
+      }
+      
+      // Use alarm-specific swipe requirement or fall back to default of 4
+      const requiredCount = alarm?.swipeRequirement || settings.quotesRequired || 4;
+      const required = Math.max(requiredCount, 1);
+      const selected = orderedQuotes.slice(0, Math.min(required, orderedQuotes.length));
       
       // Store in ref - this will NEVER change during the alarm session
       quotesRef.current = selected;
       setIsLoading(false);
       
-      console.log(`✅ PROFESSIONAL: Loaded ${selected.length} quotes permanently for this alarm session`);
+      console.log(`✅ PROFESSIONAL: Loaded ${selected.length} quotes permanently for this alarm session (required: ${required}, order: ${orderMode}, effectiveFolder: ${effectiveFolderId})`);
     } else if (quotesRef.current.length > 0) {
       // Quotes already loaded
       setIsLoading(false);
     }
-  }, [quotes.length, settings.quotesRequired, id]); // Minimal dependencies
+  }, [quotes.length, settings.quotesRequired, alarm?.quoteFolderId, alarm?.swipeRequirement, alarm?.quoteOrderMode, quoteFolders, id]); // Updated dependencies
 
   // Handle haptic feedback - once when quotes are loaded
   useEffect(() => {

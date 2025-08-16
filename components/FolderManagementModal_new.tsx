@@ -20,9 +20,7 @@ import {
   Folder,
   Star,
   Save,
-  Palette,
-  Quote as QuoteIcon,
-  MoreVertical
+  Palette
 } from 'lucide-react-native';
 import { QuoteFolder, Quote } from '@/types';
 import { theme, commonStyles } from '@/constants/theme';
@@ -35,14 +33,12 @@ interface FolderManagementModalProps {
   onSave: (updatedFolder: QuoteFolder) => void;
   onDelete: () => void;
   onAddQuote: () => void;
-  onEditQuote: (quote: Quote) => void;
-  onDeleteQuote: (quoteId: string) => void;
 }
 
 const folderColors = [
   '#4facfe', '#667eea', '#764ba2', '#f093fb', '#f5576c',
   '#00f2fe', '#a8edea', '#fed6e3', '#ffecd2', '#fcb69f',
-  '#ffeaa7', '#fd79a8', '#6c5ce7', '#a29bfe', '#74b9ff'
+  '#ffeaa7', '#fd79a8', '#6c5ce7', '#a29bfe', '#fd79a8'
 ];
 
 export function FolderManagementModal({ 
@@ -52,9 +48,7 @@ export function FolderManagementModal({
   onClose, 
   onSave, 
   onDelete, 
-  onAddQuote,
-  onEditQuote,
-  onDeleteQuote
+  onAddQuote
 }: FolderManagementModalProps) {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [editedName, setEditedName] = useState(folder?.name || '');
@@ -309,25 +303,19 @@ export function FolderManagementModal({
                   ) : (
                     <View style={styles.quotesList}>
                       {folderQuotes.map((quote) => (
-                        <TouchableOpacity 
+                        <View 
                           key={quote.id} 
-                          style={styles.quoteContainer}
-                          onPress={() => onEditQuote(quote)}
+                          style={[
+                            styles.quoteCard,
+                            commonStyles.glassCard,
+                            { borderLeftColor: folder.color }
+                          ]}
                         >
-                          <View style={[styles.quoteCard, commonStyles.glassCard]}>
-                            <View style={styles.quoteHeader}>
-                              <QuoteIcon size={24} color={theme.colors.text.accent} />
-                            </View>
-                            
-                            <Text style={styles.quoteText}>
-                              &ldquo;{quote.text}&rdquo;
-                            </Text>
-                            
-                            {quote.author && (
-                              <Text style={styles.quoteAuthor}>— {quote.author}</Text>
-                            )}
-                          </View>
-                        </TouchableOpacity>
+                          <Text style={styles.quoteText}>"{quote.text}"</Text>
+                          {quote.author && (
+                            <Text style={styles.quoteAuthor}>— {quote.author}</Text>
+                          )}
+                        </View>
                       ))}
                     </View>
                   )}
@@ -533,38 +521,25 @@ const styles = StyleSheet.create({
   quotesList: {
     gap: theme.spacing.md,
   },
-  quoteContainer: {
-    marginBottom: theme.spacing.sm,
-    width: '100%',
-  },
   quoteCard: {
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
-    minHeight: 140,
-    justifyContent: 'center',
-    width: '100%',
+    borderLeftWidth: 4,
+    borderLeftColor: '#4facfe',
     ...theme.shadows.md,
-  },
-  quoteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    marginBottom: theme.spacing.sm,
   },
   quoteText: {
     fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.regular,
     color: theme.colors.text.primary,
-    lineHeight: 24,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: theme.spacing.xs,
   },
   quoteAuthor: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.medium,
     color: theme.colors.text.secondary,
     fontStyle: 'italic',
-    textAlign: 'center',
   },
   endSpacing: {
     height: theme.spacing.xl,
